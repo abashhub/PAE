@@ -1,0 +1,175 @@
+--------------------------------------------- [ Init ] --------------------------------------------
+
+DROP SCHEMA IF EXISTS PAE CASCADE;
+CREATE SCHEMA PAE;
+
+CREATE SEQUENCE PAE.pk_journees_entreprises;
+CREATE SEQUENCE PAE.pk_utilisateurs;
+CREATE SEQUENCE PAE.pk_adresses_facturation;
+CREATE SEQUENCE PAE.pk_entreprises;
+CREATE SEQUENCE PAE.pk_personnes_contact;
+
+
+---------------------------------------- [ Create tables ] ----------------------------------------
+
+CREATE TABLE PAE.journees_entreprises (
+    id_journee_entreprises INTEGER PRIMARY KEY DEFAULT nextval('PAE.pk_journees_entreprises'),
+    annee_academique VARCHAR(20),
+    date_journee TIMESTAMP,
+    date_invitations TIMESTAMP,
+    cloturee boolean 
+);
+
+CREATE TABLE PAE.utilisateurs (
+    id_utilisateur INTEGER PRIMARY KEY DEFAULT nextval('PAE.pk_utilisateurs'),
+    pseudo VARCHAR(50),
+    nom VARCHAR(100),
+    prenom VARCHAR(100),
+    email VARCHAR(100),
+    est_responsable BOOLEAN,
+    mot_de_passe VARCHAR(100)
+);
+
+CREATE TABLE PAE.communes (
+    code_postal INTEGER PRIMARY KEY,
+    nomCommune VARCHAR(50)
+);
+
+CREATE TABLE PAE.adresses_facturation (
+    id_adresse_facturation INTEGER PRIMARY KEY DEFAULT nextval('PAE.pk_adresses_facturation'),
+    rue VARCHAR(100),
+    numero VARCHAR(20),
+    boite VARCHAR(20),
+    commune INTEGER REFERENCES PAE.communes(code_postal)
+);
+
+CREATE TABLE PAE.entreprises (
+    id_entreprise INTEGER PRIMARY KEY DEFAULT nextval('PAE.pk_entreprises'),
+    adresse_facturation INTEGER REFERENCES PAE.adresses_facturation(id_adresse_facturation),
+    createur INTEGER REFERENCES PAE.utilisateurs(id_utilisateur),
+    nom VARCHAR(100),
+    date_premier_contact TIMESTAMP,
+    num_version INTEGER
+);
+
+CREATE TABLE PAE.personnes_contact (
+    id_personne_contact INTEGER PRIMARY KEY DEFAULT nextval('PAE.pk_personnes_contact'),
+    entreprise INTEGER REFERENCES PAE.entreprises(id_entreprise),
+    nom VARCHAR(100),
+    prenom VARCHAR(100),
+    email VARCHAR(100),
+    telephone VARCHAR(20),
+    est_actif BOOLEAN,
+    num_version INTEGER
+);
+
+CREATE TABLE PAE.participations_entreprises (
+    journee_entreprises INTEGER REFERENCES PAE.journees_entreprises(id_journee_entreprises),
+    entreprise INTEGER REFERENCES PAE.entreprises(id_entreprise),
+    etat varchar(20),    
+    num_version_participation INTEGER,
+    annulee BOOLEAN,
+    PRIMARY KEY (journee_entreprises, entreprise)
+);
+
+CREATE TABLE PAE.participations_contacts (
+    journee_entreprises INTEGER REFERENCES PAE.journees_entreprises(id_journee_entreprises),
+    entreprise INTEGER REFERENCES PAE.entreprises(id_entreprise),
+    personne_contact INTEGER REFERENCES PAE.personnes_contact(id_personne_contact),
+    num_version_participation_contact INTEGER,
+    PRIMARY KEY(journee_entreprises, entreprise, personne_contact)
+);
+
+
+-------------------------------------------- [ Grants ] -------------------------------------------
+
+-- Plutôt que d'utiliser des grant on a décidé de "sacrifier" la db de Gauthier (sous le conseil de M. Grolaux) en donnant l'accès
+-- à celle-ci à tout le monde via un fichier properties contenant les mêmes infos pour éviter les conflits de commit
+
+
+-- login roles : [gauthier_lallemand], ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura
+
+-- GRANT CONNECT
+--     ON DATABASE dbgauthier_lallemand
+--     TO ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura;
+-- GRANT USAGE
+--     ON SCHEMA PAE
+--     TO ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura;
+-- GRANT USAGE, SELECT, UPDATE
+--     ON PAE.pk_journees_entreprises, PAE.pk_entreprises, PAE.pk_personnes_contact, PAE.pk_adresses_facturation, PAE.pk_utilisateurs
+--     TO ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura;
+-- GRANT SELECT, INSERT, UPDATE
+--     ON ALL TABLES IN SCHEMA PAE
+--     TO ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura;
+-- GRANT DELETE, TRUNCATE
+--     ON PAE.participations_entreprises, PAE.participations_contacts
+--     TO ahmad_bashir, benjamin_berge, christophe_bortier, roland_bura;
+
+
+-------------------------------------------- [ Views ] --------------------------------------------
+
+CREATE OR REPLACE VIEW PAE.nombre_entreprises_invitees (nombre_invitees) AS
+    -- Compte le nombre d'entreprises invitées pour la dernière JE (= dernière JE insérée)
+    SELECT count(*)
+    FROM PAE.participations_entreprises pe, PAE.journees_entreprises je
+    WHERE (SELECT max(id_journee_entreprises) FROM PAE.journees_entreprises) = je.id_journee_entreprises
+          AND je.id_journee_entreprises = pe.journee_entreprises
+          AND pe.etat = 'invitée'
+          AND pe.annulee = FALSE;
+
+CREATE OR REPLACE VIEW PAE.nombre_entreprises_confirmees (nombre_confirmees) AS
+    -- Compte le nombre d'entreprises confirmées pour la dernière JE (= dernière JE insérée) 
+    SELECT count(*)
+    FROM PAE.participations_entreprises pe, PAE.journees_entreprises je
+    WHERE (SELECT max(id_journee_entreprises) FROM PAE.journees_entreprises) = je.id_journee_entreprises
+          AND je.id_journee_entreprises = pe.journee_entreprises
+          AND pe.etat = 'confirmée'
+          AND pe.annulee = FALSE;
+
+CREATE OR REPLACE VIEW PAE.nombre_contacts_presents (nombre_contacts) AS
+    -- Compte le nombre de personnes de contact présents pour la dernière JE (= dernière JE insérée)
+    SELECT count(*)
+    FROM PAE.participations_contacts pc, PAE.journees_entreprises je
+    WHERE (SELECT max(id_journee_entreprises) FROM PAE.journees_entreprises) = je.id_journee_entreprises
+          AND je.id_journee_entreprises = pc.journee_entreprises;
+
+
+------------------------------------------- [ Inserts ] -------------------------------------------
+/*
+-- login = 'admin'
+-- password = 'root'
+INSERT INTO PAE.utilisateurs VALUES (
+    DEFAULT, 'admin', 'John', 'Smith', 'john.smith@vinci.be', TRUE, '$2a$10$0QRUNTszdRq/pil67tcG8eMxHiWjWnufvQW4hbOZPDfOUvbKGvbRK'
+);
+
+-- login = 'Bob'
+-- password = 'Bernard'
+INSERT INTO PAE.utilisateurs VALUES (
+    DEFAULT, 'Bob', 'Bobby', 'Smith', 'bob.smith@vinci.be', FALSE, '$2a$10$Mv4F2FTFusmqKUfByRjISuKYib9oY1tLW5J4VdUxIRkdrQX5S.b6K'
+);*/
+          
+-------------------------------------- [ Demo ] -------------------------------------------------------
+select * from PAE.entreprises;
+select * from PAE.journees_entreprises;
+select * from PAE.participations_entreprises;
+select * from PAE.utilisateurs;
+
+insert into PAE.utilisateurs values 
+(DEFAULT,'don','donatien','grolaux','donatien.grolaux@vinci.be',true,'$2a$10$fY8r1gjphvuQZ4eTkjpjV.1IIyzM/FqyWuIzRz9NZMc3/xCJ9VTj2'),
+(DEFAULT,'bri','brigitte','lehman','brigitte.lehmann@vinci.be',true,'$2a$10$fY8r1gjphvuQZ4eTkjpjV.1IIyzM/FqyWuIzRz9NZMc3/xCJ9VTj2');
+
+
+insert into PAE.journees_entreprises values 
+(DEFAULT,'2010-2011','27/10/2010','27/10/2010',true),
+(DEFAULT,'2011-2012','16/11/2011','16/11/2011',true),
+(DEFAULT,'2012-2013','07/11/2012','07/11/2012',true),
+(DEFAULT,'2013-2014','13/11/2013','13/11/2013',true),
+(DEFAULT,'2014-2015','12/11/2014','12/11/2014',true),
+(DEFAULT,'2015-2016','28/10/2015','28/10/2015',true),
+(DEFAULT,'2016-2017','26/10/2016','07/11/2016',false);
+
+
+
+/*
+ * update PAE.utilisateurs set est_responsable=true where email='theo.phane@vinci.be';
+ */

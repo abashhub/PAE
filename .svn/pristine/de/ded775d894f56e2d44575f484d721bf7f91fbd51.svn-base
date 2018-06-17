@@ -1,0 +1,87 @@
+var contact = new(function() {
+	function save() {
+		var d = {
+			companyId : parseInt($("#addContact").find("#companyToSelect").val()),
+			lastName : $("#addContact").find("#nomContact").val(),
+			firstName : $("#addContact").find("#prenomContact").val(),
+			email : $("#addContact").find("#mailContact").val(),
+			telephone : $("#addContact").find("#telContact").val(),
+		};
+		
+		
+		if(d['lastName'] === ''){
+			$("#msg_addContact").text("Entrer le nom du contact.");
+			return;
+		}
+		if(d['firstName'] === ''){
+			$("#msg_addContact").text("Entrer le prénom du contact.");
+			return;
+		}
+		if(d['email'] === '' && d['telephone'] === ''){
+			$("#msg_addContact").text("Entrer le numéro de téléphone du contact et/ou son adresse email.");
+			return;
+			
+		}
+		if(isNaN(d['companyId'])){
+			$("#msg_addContact").text("Choisissez l'entreprise que représente le contact.");
+			return;
+		}
+		$("#msg_addContact").text("");
+		var success = function(response) {
+			request.successDefault(response);
+			$("#msg_addContact").attr('style',"color:green");
+			$("#msg_addContact").text("Contact added");		
+			document.getElementById("addContact").reset();	
+		}
+		
+		var error = function(jqXHR, serverStatus, errorThrown) {
+			console.log(jqXHR);
+			toastr.error(JSON.parse(jqXHR['responseText'])['message']);
+			if(jqXHR.status === 401){
+				redirectToLogin();
+			} else {
+				$("#msg_addContact").attr('style',"color:red");
+				$("#msg_addContact").text(JSON.parse(jqXHR['responseText'])['message']);
+			}
+		}
+		
+		request.post('addContact',d,success,error);
+	}
+	
+	
+	 function cancel(){
+			document.addContact_form.reset(); // reset form
+			$("#msg_addContact").text("");
+	}
+	 
+	function fillSelectCompany(){
+		var success = function(response){
+			console.log(response);
+			request.successDefault(response);
+			var contentAllCompanies = "<option value='' selected></option>";
+			response.companies.forEach(function(company){
+				var row="<option value='" + company.companyId + "'>" + company.name+"</option>" ;
+				contentAllCompanies += row;
+			});
+			$('#companyToSelect').html(contentAllCompanies);
+		};
+		var d;
+		
+		request.post('getAllCompaniesForContact',d,success,request.errorDefault);
+		
+	} 
+	function load(){
+		fillSelectCompany();
+		htmlHandler.showAddContact();
+	}
+	
+	return{
+		save:save,
+		cancel:cancel,
+		fillSelectCompany:fillSelectCompany,
+		load:load
+	}
+	
+});
+
+

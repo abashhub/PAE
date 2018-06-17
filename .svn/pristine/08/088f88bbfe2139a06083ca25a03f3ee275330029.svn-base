@@ -1,0 +1,147 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import bizz.AddressImpl;
+import bizz.CompanyImpl;
+import bizz.ParticipationImpl;
+import bizz.UserImpl;
+
+public class CompanyImplTest {
+
+  private UserImpl usr;
+  private AddressImpl a1;
+  private CompanyImpl comp;
+  private ParticipationImpl part1, part2;
+  private List<ParticipationImpl> participations;
+
+
+  @Before
+  public void setUp() throws Exception {
+    usr = new UserImpl(1L, "don", "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    a1 = new AddressImpl(1, "des test", "5", "7", "testVille", 1790L);
+    comp = new CompanyImpl(1L, a1, usr, "sony", new Date(2017, 04, 17));
+    part1 = new ParticipationImpl("payee", false);
+    part2 = new ParticipationImpl("invitee", false);
+    participations = new ArrayList<ParticipationImpl>();
+    participations.add(part1);
+    participations.add(part2);
+    comp.setParticipations(participations);
+    comp.setNumVersion(5);
+
+  }
+
+  @Test
+  public void testGetParticipations() {
+    assertEquals(participations, comp.getParticipations());
+  }
+
+  @Test
+  public void testSetParticipations() {
+    List<ParticipationImpl> participations1 = new ArrayList<ParticipationImpl>();
+    ParticipationImpl part3 = new ParticipationImpl("payee", false);
+    participations1.add(part3);
+    comp.setParticipations(participations1);
+    assertEquals(participations1, comp.getParticipations());
+  }
+
+  @Test
+  public void testCheckRegistration1() {
+    CompanyImpl comp2 = new CompanyImpl(1L, null, usr, "sony", new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration2() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, null, new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration3() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, "", new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration4() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, "Acer", new Date(2017, 04, 17));
+    assertTrue(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testGetNumVersion() {
+    assertEquals(5, comp.getNumVersion());
+  }
+
+  @Test
+  public void testGetCompanyId() {
+    assertEquals(new Long(1), comp.getCompanyId());
+  }
+
+  @Test
+  public void testSetCompanyId() {
+    comp.setCompanyId(5L);
+    assertEquals(new Long(5), comp.getCompanyId());
+  }
+
+  @Test
+  public void testGetCreater() {
+    assertEquals(usr, comp.getCreater());
+  }
+
+  @Test
+  public void testSetCreater() {
+    UserImpl usr2 = new UserImpl(2L, "den", "dede", "cece", "cece@yahoo.fr", false, "hoho");
+    comp.setCreater(usr2);
+    assertEquals(usr2, comp.getCreater());
+  }
+
+  @Test
+  public void testGetName() {
+    assertEquals("sony", comp.getName());
+  }
+
+  @Test
+  public void testSetName() {
+    comp.setName("Acer");
+    assertEquals("Acer", comp.getName());
+  }
+
+  @Test
+  public void testGetDateFirstContact() {
+    assertEquals(new Date(2017, 04, 17), comp.getDateFirstContact());
+  }
+
+  @Test
+  public void testSetDateFirstContact() {
+    Date da = new Date(2017, 05, 15);
+    comp.setDateFirstContact(da);
+    assertEquals(da, comp.getDateFirstContact());
+  }
+
+  @Test
+  public void testSetNumVersion() {
+    comp.setNumVersion(54);
+    assertEquals(54, comp.getNumVersion());
+  }
+
+  @Test
+  public void testGetAdresseFacturation() {
+    assertEquals(a1, comp.getAdresseFacturation());
+  }
+
+  @Test
+  public void testSetAdresseFacturation() {
+    AddressImpl a2 = new AddressImpl(2, "rue des test", "8", "23", "testdoVille", 1770L);
+    comp.setAdresseFacturation(a2);
+    assertEquals(a2, comp.getAdresseFacturation());
+  }
+}

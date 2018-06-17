@@ -1,0 +1,60 @@
+package persistence.dao;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface extends DAO and adds specific methods related to Contacts like
+ */
+public interface ContactDAO extends DAO<ContactDTO> {
+
+  /**
+   * Find a contact by its email. contactDTO is expected to contain the contact's email.
+   * 
+   * @param contactDTO the contact Data Transfer Object.
+   * @return ContactDTO
+   */
+  ContactDTO findByEmail(ContactDTO contactDTO);
+
+  /**
+   * Return the list of the contact working for the given company.
+   * 
+   * @param companyDTO
+   * @return list
+   */
+  List<ContactDTO> fillInfosContacts(CompanyDTO companyDTO);
+
+  List<List<String>> getAllContactsInfoByCategory();
+
+  List<ContactDTO> searchContacts(ContactDTO c);
+
+  int insertParticipation(ContactDTO contact, JEDTO jeDto);
+
+  /**
+   * Remove the participation of the given contact.
+   * 
+   * @param contact
+   * @param jeDto
+   * @return test
+   */
+  boolean deleteParticipation(ContactDTO contact, JEDTO jeDto);
+
+  /**
+   * Find all contacts related to a company. companyDTO is expected to contain the company's id.
+   * 
+   * @param companyDTO the company Data Transfer Object.
+   * @return List<ContactDTO>
+   */
+  List<ContactDTO> findByCompany(CompanyDTO companyDTO);
+
+  /**
+   * Deactivate a contact. contact is expected to contain the contact's id.
+   * 
+   * @param contact the contact Data Transfer Object.
+   * @return boolean
+   */
+  boolean desactivateContact(ContactDTO contact);
+}

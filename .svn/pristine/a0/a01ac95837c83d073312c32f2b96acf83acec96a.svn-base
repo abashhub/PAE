@@ -1,0 +1,158 @@
+toastr.options = {
+	    "closeButton": true,
+	    "debug": false,
+	    "newestOnTop": false,
+	    "progressBar": false,
+	    "positionClass": "toast-top-right",
+	    "preventDuplicates": false,
+	    "onclick": null,
+	    "showDuration": "300",
+	    "hideDuration": "1000",
+	    "timeOut": "5000",
+	    "extendedTimeOut": "1000",
+	    "showEasing": "swing",
+	    "hideEasing": "linear",
+	    "showMethod": "fadeIn",
+	    "hideMethod": "fadeOut"
+	};
+
+
+
+$(function() {	
+	
+	// // ----Login $
+	
+	var success = function(response) {
+		$("#afDashboard").attr('style',"display:block");
+		$("#co").attr('style',"display:none");
+		$("#wrapper").attr('style',"display:block");
+		toastr.success("You are logged in");
+		updateData(); // // update data
+		if(response.loggedAs==="user"){
+			$('#newCompaniesToContact').attr('style',"display:none");
+			$('#companiesToContact').attr('style',"display:none");
+		}
+	}
+	request.post('isLoggedIn', undefined, success,request.errorDefaultWithoutToast);
+	
+	
+
+	
+		
+});
+
+// // --- Login
+$('#btn_connexion').on("click", connection.login);
+$('#logOut').on("click", connection.logout);	
+
+// // --- AddCompany $
+$('#btn_save').on("click", company.add);
+$('#btn_cancel').on("click", company.viderForm);
+////-----ChangeState----$
+$(document).on('click',"button.changeState",company.changerEtatParticipation);
+$(document).on('click',"button.annulerParticipation",company.annulerParticipation);
+
+// // ----AddContact $
+$('#btn_saveContact').on("click",contact.save);
+$('#btn_cancelContact').on("click",contact.cancel);	
+$("#ajoutContact").on("click",contact.fillSelectCompany);
+
+// // ----Inscription $
+$('#btn_register').on("click", connection.inscription); 
+
+// // ----AddJE j
+je.completerSelectAnnee();
+$('#btn_creerJE').on('click',je.creer);
+//$("#btn_creerJE").on("click",htmlHandler.showJECompanies);
+$('#btn_saveJE').on("click",je.sauver);
+$('#btn_cancelJE').on("click",function(){});
+
+// // ----Information /
+$('.cancelChangeInformations').on('click', informationCompany.printInfo);
+$('#btnSaveChangeCompany').on('click',informationCompany.save);
+$(document).on('click',"button.buttonUpdateContact",informationContact.updateContact);
+$(document).on('click',"button.buttonDesactivateContact",informationContact.desactivateContact);
+$(document).on('click',"td.dashboardTd",informationCompany.printInfo);
+$(document).on('click',"tr.dashboardTd",informationCompany.printInfo);
+
+
+// // ----myScript $(
+$("#ajoutEntreprise").on("click",htmlHandler.showAddCompany);
+
+$("#ajoutJE").on("click",htmlHandler.showJECreation);
+
+$("#btn_cancelJE").on("click",htmlHandler.showJEDoneOrCancelled);
+
+$("#pasInscrit").on("click", htmlHandler.showInscription);
+
+$("#logOut").on("click",htmlHandler.showLogin);
+
+$("#ajoutContact").on("click",htmlHandler.showAddContact);
+
+$('#informationAjouterContact').on('click',htmlHandler.showAddContact);
+
+// // <select id="entreprisesAInviter"> $(
+$("#dash_invite").on("click", function() {
+	var id=$("#entreprisesAInviter").prop("value");
+	var d = {
+			id : $("#entreprisesAInviter").prop("value"),	
+	};
+	
+		var success = function(response){
+			toastr.success(response['message']);
+			updateData();
+		}
+	
+		request.post('inviteCompany',d,success,request.errorDefault);
+});
+
+// generate CSV for all companies to contact
+$("#companiesToContact").on("click", csv.companiesToContact);
+
+// generate CSV for new companies to contact
+$("#newCompaniesToContact").on("click", csv.newCompaniesToContact);
+
+$("#dashboard").on("click",function(){
+	htmlHandler.showDashboard();
+	updateData();
+});
+
+$("#home").on("click",function(){
+	htmlHandler.showDashboard();
+	updateData();
+});
+
+
+//recherche
+$("#recherche").on("click",search.load);
+$("#recherche_entreprise_btn").on("click",search.company); 
+$("#recherche_contact_btn").on("click",search.contact); 
+$("#recherche_je_btn").on("click",search.je);
+
+//clore une je
+$("#btn_cloture").on("click",je.cloturer);
+
+
+//using enter key
+$(document).keypress(function(e) {
+	  if(e.which == 13) {
+		  switch(htmlHandler.currentlyDisplayed()){
+				case 'dashboard':break;
+				case 'addContact': contact.save();break;
+				case 'addJE': break;
+				case 'search': break;
+				case 'addCompany':company.add();break;
+				case 'info': informationCompany.save();break;
+				case 'jeCreation': break;
+				case 'jeCreationIfNoJE':break;
+				case 'login': connection.login();break;
+				case 'inscription':connection.inscription(); break;
+				default: 
+		  }
+	  }
+});
+
+
+
+
+

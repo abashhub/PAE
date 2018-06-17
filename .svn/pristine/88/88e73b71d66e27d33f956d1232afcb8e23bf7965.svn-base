@@ -1,0 +1,171 @@
+
+/**
+ * This stateless object contains every function that changes html attributes'styles.
+ * It is mainly use for the navigation from one page to an other.
+ */
+var htmlHandler = new(function() {
+	var v_currentlyDisplayed;
+	
+	/**
+	 * This function hide every pages from the user.
+	 */
+	function setAllDisplayExceptMenuToNone(){
+		$("#afDashboard").attr('style',"display:none");
+		$("#ajContact").attr('style','display:none');
+		$("#ajJE").attr('style',"display:none");
+		$("#doRecherche").attr('style',"display:none");
+		$("#ajEntreprise").attr('style',"display:none");
+		$("#informations").attr('style',"display:none");
+		$("#co").attr('style',"display:none");
+		$("#informations").attr('style',"display:none");
+		$("#entreprisesPartJE").attr("style","display:none");
+	}
+	
+	
+	function checkIfCreateAJECanBeAllowed(){
+		//permet al modification de création je si on quitte la page avant la fin
+		if(v_currentlyDisplayed==="jeCreation"){
+			$("#select_annee_Academique").prop('disabled', false);
+			$("#btn_creerJE").attr('style','display:block');
+			$("#txtJE").removeAttr("disabled");
+			$("#rmJE").attr("style","pointer-events:auto");
+			$("#calJE").attr("style","pointer-events:auto");
+			$("#okJE").attr("style","display:none");
+			$("#entreprisesPartJE").attr("style","display:none");
+		}
+	}
+	
+	/**
+	 * This function print the specified page. 
+	 */
+	function show(page){
+		setAllDisplayExceptMenuToNone();
+		checkIfCreateAJECanBeAllowed();
+		$("#wrapper").attr('style','display:block');
+		switch(page){
+			case 'dashboard':$("#afDashboard").attr('style',"display:block"); break;
+			case 'addContact': $("#ajContact").attr('style','display:block'); break;
+			case 'addJE': $("#ajJE").attr('style',"display:block");break;
+			case 'search': $("#doRecherche").attr('style',"display:block");break;
+			case 'addCompany':$("#ajEntreprise").attr('style',"display:block"); break;
+			case 'info':$("#informations").attr('style',"display:block");break;
+			case 'jeCreation':$("#ajJE").attr('style',"display:block");break;
+			case 'jeCreationIfNoJE':$("#ajJE").attr('style',"display:block");break;
+			case 'login':$("#wrapper").attr('style','display:none');$("#co").attr('style',"display:block");break;
+			default: console.log(erreur);
+		}
+		v_currentlyDisplayed=page;
+		
+	};
+	
+	function creationJEPlus(){
+		$("#btn_creerJE").attr('style','display:block');
+		$("#txtJE").removeAttr("disabled");
+		$("#rmJE").attr("style","pointer-events:auto");
+		$("#calJE").attr("style","pointer-events:auto");
+		$("#okJE").attr("style","display:none");
+		$("#entreprisesPartJE").attr("style","display:none");
+	}
+	function showJEDoneOrCancelled(){
+		$("#btn_creerJE").attr('style','display:block');
+		$("#txtJE").removeAttr("disabled");
+		$("#rmJE").attr("style","pointer-events:auto");
+		$("#calJE").attr("style","pointer-events:auto");
+		$("#okJE").attr("style","display:none");
+		$("#entreprisesPartJE").attr("style","display:none");
+	}
+	
+	function showJECompanies(){
+		$("#select_annee_Academique").prop('disabled', true);
+		$("#btn_creerJE").attr('style','display:none');
+		$("#txtJE").attr("disabled",'true');
+		$("#rmJE").attr("style","pointer-events:none");
+		$("#calJE").attr("style","pointer-events:none");
+		$("#okJE").attr("style","display:block");
+		$("#entreprisesPartJE").attr("style","display:block");
+	}
+	
+	function showInscription() {
+		V_currentlyDisplayed='inscription';
+		if ($('#inscription').attr('style') == 'display:none')
+			$('#inscription').attr("style", "display:block");
+		else
+			$('#inscription').attr("style", "display:none");
+	}
+	
+	function hideCloture(){
+		$('.inivtation_dash').attr('style','display:none');
+		$('#btn_cloture').attr("style", "display:none");
+		$('#cloture_msg').attr("style", "display:block");
+	}
+	
+	function showCloture(){
+		$('#btn_cloture').attr("style", "display:block");
+		$('#cloture_msg').attr("style", "display:none");
+		$('.inivtation_dash').attr("style", "display:block");
+		
+	}
+	
+	function showAddCompany(){
+		show('addCompany');
+	}
+
+	function showAddContact(){
+		show('addContact');
+	}
+
+	function showInfo() {
+		show('info');
+	}
+
+	function showJECreation(){
+		show('jeCreation');
+	}
+
+	function showJECreationIfNoJE(){
+		show('jeCreationIfNoJE');
+	}
+
+	function showLogin(){
+		show('login');
+	}
+
+	function showSearch(){
+		show('search');
+	}
+
+	function showDashboard(){
+		show('dashboard');
+	}
+	
+	
+	
+	
+	
+	/*function isDisplayed(element){
+		return element.style.display === 'block';
+	}*/
+	
+	function currentlyDisplayed(){
+		return v_currentlyDisplayed;
+	}
+		
+	
+	return{
+		showAddCompany:showAddCompany,
+		showAddContact:showAddContact,
+		showInfo:showInfo,
+		showJEDoneOrCancelled:showJEDoneOrCancelled,
+		showJECompanies:showJECompanies,
+		showJECreation:showJECreation,
+		showJECreationIfNoJE:showJECreationIfNoJE,
+		showLogin:showLogin,
+		showInscription:showInscription,
+		showSearch:showSearch,
+		showDashboard:showDashboard,
+		currentlyDisplayed:currentlyDisplayed,
+		hideCloture:hideCloture,
+		showCloture:showCloture,
+		creationJEPlus:creationJEPlus
+	}
+});

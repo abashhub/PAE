@@ -1,0 +1,463 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.easymock.EasyMock;
+import org.junit.Before;
+import org.junit.Test;
+
+import bizz.Company;
+import bizz.Participation;
+import bizz.dto.CompanyDTO;
+import bizz.dto.JEDTO;
+import bizz.dto.ParticipationDTO;
+import bizz.ucc.CompanyUCCImpl;
+import exception.BizzException;
+import persistence.DALServices;
+import persistence.dao.CompanyDAO;
+
+public class CompanyUCCImplTest {
+
+  private DALServices mockDal;
+  private CompanyDAO mockComp;
+  private CompanyUCCImpl companyUCC;
+
+  @Before
+  public void setUp() throws Exception {
+    mockDal = EasyMock.createMock(DALServices.class);
+    mockComp = EasyMock.createMock(CompanyDAO.class);
+    companyUCC = new CompanyUCCImpl(mockDal, mockComp);
+  }
+
+  @Test
+  public void testRegister1() {
+    Company cd = EasyMock.createMock(Company.class);
+    EasyMock.expect(cd.checkRegistration()).andReturn(Boolean.TRUE);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.create(cd)).andReturn(5L);
+    mockDal.commit();
+    EasyMock.replay(mockDal);
+    cd.setCompanyId(5L);
+    EasyMock.replay(cd);
+    EasyMock.expect(mockComp.find(cd)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    assertNotNull(companyUCC.register(cd));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testRegister2() {
+    Company cd = EasyMock.createMock(Company.class);
+    EasyMock.expect(cd.checkRegistration()).andReturn(Boolean.FALSE);
+    EasyMock.replay(cd);
+    companyUCC.register(cd);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testRegister3() {
+    Company cd = EasyMock.createMock(Company.class);
+    EasyMock.expect(cd.checkRegistration()).andReturn(Boolean.TRUE);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.create(cd)).andReturn(null);
+    EasyMock.replay(cd);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    EasyMock.replay(mockComp);
+    companyUCC.register(cd);
+  }
+
+  @Test
+  public void testGetAllCompaniesInvitedForJE1() {
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.findAllInvitedInJE(je)).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompaniesInvitedForJE(je), li);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetAllCompaniesInvitedForJE2() {
+    JEDTO je = null;
+    companyUCC.getAllCompaniesInvitedForJE(je);
+
+  }
+
+  @Test
+  public void testGetAllCompaniesNotInvitedForJE1() {
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.findAllNotInvitedInJE(je)).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompaniesNotInvitedForJE(je), li);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetAllCompaniesNotInvitedForJE2() {
+    JEDTO je = null;
+    companyUCC.getAllCompaniesNotInvitedForJE(je);
+
+  }
+
+  @Test
+  public void testGetCompany1() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    EasyMock.expect(mockComp.find(cd)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getCompany(cd), cd);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetCompany2() {
+    companyUCC.getCompany(null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetCompany3() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    EasyMock.expect(mockComp.find(cd)).andReturn(null);
+    EasyMock.replay(mockComp);
+    companyUCC.getCompany(cd);
+  }
+
+  @Test
+  public void testGetAllCompaniesAviableForJe1() {
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.getAllCompaniesAviableForJe(je)).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompaniesAviableForJe(je), li);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetAllCompaniesAviableForJe2() {
+    companyUCC.getAllCompaniesAviableForJe(null);
+  }
+
+  @Test
+  public void testGetAllCompaniesAviableForJe3() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.getAllCompaniesAviableForJe(je)).andReturn(null);
+    EasyMock.replay(mockComp);
+    assertNull(companyUCC.getAllCompaniesAviableForJe(je));
+  }
+
+  @Test
+  public void testGetNewCompaniesAviableForJe1() {
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    EasyMock.expect(mockComp.getNewCompaniesAviableForJe()).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getNewCompaniesAviableForJe(), li);
+  }
+
+  @Test
+  public void testGetNewCompaniesAviableForJe2() {
+    EasyMock.expect(mockComp.getNewCompaniesAviableForJe()).andReturn(null);
+    EasyMock.replay(mockComp);
+    assertNull(companyUCC.getNewCompaniesAviableForJe());
+  }
+
+  @Test(expected = BizzException.class)
+  public void testInviteCompany1() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    companyUCC.inviteCompany(null, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testInviteCompany2() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    companyUCC.inviteCompany(cd, null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testInviteCompany3() {
+    Date date = new Date();
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(je.getDateJournee()).andReturn(date);
+    EasyMock.replay(je);
+    companyUCC.inviteCompany(cd, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testInviteCompany4() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(3000, 5, 5));
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.TRUE);
+
+    EasyMock.replay(je);
+
+    companyUCC.inviteCompany(cd, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testInviteCompany5() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(3000, 5, 5));
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.FALSE);
+    EasyMock.replay(je);
+    EasyMock.expect(mockComp.inviteCompany(cd, je)).andReturn(Boolean.FALSE);
+    EasyMock.replay(mockComp);
+
+    companyUCC.inviteCompany(cd, je);
+  }
+
+  @Test
+  public void testInviteCompany6() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(3000, 5, 5));
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.FALSE);
+    EasyMock.replay(je);
+    EasyMock.expect(mockComp.inviteCompany(cd, je)).andReturn(Boolean.TRUE);
+    EasyMock.replay(mockComp);
+    assertTrue(companyUCC.inviteCompany(cd, je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testUpdateCompany1() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.update(cd)).andReturn(null);
+    EasyMock.expect(mockComp.find(cd)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    EasyMock.expect(cd.getCompanyId()).andReturn(5L);
+    EasyMock.replay(cd);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    companyUCC.updateCompany(cd);
+  }
+
+  @Test
+  public void testUpdateCompany2() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.update(cd)).andReturn(5L);
+    EasyMock.expect(mockComp.find(cd)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    mockDal.commit();
+    EasyMock.replay(mockDal);
+    assertEquals(companyUCC.updateCompany(cd), cd);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testUpdateCompany3() {
+    companyUCC.updateCompany(null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testUpdateCompany4() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.update(cd)).andReturn(null);
+    EasyMock.expect(mockComp.find(cd)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    EasyMock.expect(cd.getCompanyId()).andReturn(null);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    companyUCC.updateCompany(cd);
+  }
+
+  @Test
+  public void testGetAllCompaniesInfoByCategory() {
+    List<List<String>> list = new ArrayList<>();
+    List<String> li = new ArrayList<>();
+    li.add("ss");
+    li.add("gne");
+    List<String> li2 = new ArrayList<>();
+    li2.add("yup");
+    li2.add("nope");
+    list.add(li);
+    list.add(li2);
+    EasyMock.expect(mockComp.getAllCompaniesInfoByCategory()).andReturn(list);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompaniesInfoByCategory(), list);
+  }
+
+  @Test
+  public void testSearchCompanies() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    EasyMock.expect(mockComp.searchCompanies(cd)).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.searchCompanies(cd), li);
+  }
+
+  @Test
+  public void testChangeState1() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    List<ParticipationDTO> liP = new ArrayList<>();
+    Participation part = EasyMock.createMock(Participation.class);
+    liP.add(part);
+    EasyMock.expect(cd.getParticipations()).andReturn(liP);
+    EasyMock.replay(cd);
+    EasyMock.expect(part.checkParticipation()).andReturn(Boolean.FALSE);
+    EasyMock.replay(part);
+    assertNull(companyUCC.changeState(cd, je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testChangeState2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    CompanyDAO comp = EasyMock.createMock(CompanyDAO.class);
+    List<ParticipationDTO> liP = new ArrayList<>();
+    Participation part = EasyMock.createMock(Participation.class);
+    liP.add(part);
+
+    EasyMock.expect(cd.getParticipations()).andReturn(liP);
+    EasyMock.replay(cd);
+    EasyMock.expect(part.checkParticipation()).andReturn(Boolean.TRUE);
+    EasyMock.replay(part);
+    mockDal.startTransaction();
+    EasyMock.expect(comp.changeState(cd, je)).andReturn(null);
+    EasyMock.replay(comp);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+
+    companyUCC.changeState(cd, je);
+
+  }
+
+  @Test
+  public void testChangeState3() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    List<ParticipationDTO> liP = new ArrayList<>();
+    Participation part = EasyMock.createMock(Participation.class);
+    liP.add(part);
+
+    EasyMock.expect(cd.getParticipations()).andReturn(liP);
+    EasyMock.replay(cd);
+    EasyMock.expect(part.checkParticipation()).andReturn(Boolean.TRUE);
+    EasyMock.replay(part);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.changeState(cd, je)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    mockDal.commit();
+    EasyMock.replay(mockDal);
+
+    assertEquals(cd, companyUCC.changeState(cd, je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testChangeState4() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    companyUCC.changeState(null, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testChangeState5() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    companyUCC.changeState(cd, null);
+  }
+
+  @Test
+  public void testCancelState1() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.cancelState(cd, je)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    mockDal.commit();
+    EasyMock.replay(mockDal);
+    assertEquals(companyUCC.cancelState(cd, je), cd);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCancelState2() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(mockComp.cancelState(cd, je)).andReturn(null);
+    EasyMock.replay(mockComp);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    companyUCC.cancelState(cd, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCancelState3() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    companyUCC.cancelState(cd, null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCancelState4() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    companyUCC.cancelState(null, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetAllCompaniesToContactForJE1() {
+    JEDTO je = null;
+    companyUCC.getAllCompaniesToContactForJE(je);
+  }
+
+  @Test
+  public void testGetAllCompaniesToContactForJE2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    EasyMock.expect(mockComp.getAllToContactForJE(je)).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompaniesToContactForJE(je), li);
+  }
+
+  @Test
+  public void testGetAllCompanies() {
+    List<CompanyDTO> li = new ArrayList<>();
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    li.add(EasyMock.createMock(CompanyDTO.class));
+    EasyMock.expect(mockComp.getAllCompanies()).andReturn(li);
+    EasyMock.replay(mockComp);
+    assertEquals(companyUCC.getAllCompanies(), li);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetCompanyForCSV1() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    companyUCC.getCompanyForCSV(cd, null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetCompanyForCSV2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    companyUCC.getCompanyForCSV(null, je);
+  }
+
+  @Test
+  public void testGetCompanyForCSV3() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.findForCSV(cd, je)).andReturn(cd);
+    EasyMock.replay(mockComp);
+    companyUCC.getCompanyForCSV(cd, je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testGetCompanyForCSV4() {
+    CompanyDTO cd = EasyMock.createMock(CompanyDTO.class);
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(mockComp.findForCSV(cd, je)).andReturn(null);
+    EasyMock.replay(mockComp);
+    companyUCC.getCompanyForCSV(cd, je);
+  }
+}

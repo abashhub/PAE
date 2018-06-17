@@ -1,0 +1,151 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.dto.JEDTO;
+import exception.BizzException;
+import persistence.DALServices;
+import persistence.dao.DAO;
+import persistence.dao.JEDAO;
+import util.Util;
+
+/**
+ * This class is the implementation of JEUCC, this implementation is meant to be used in production.
+ */
+public class JEUCCImpl implements JEUCC {
+  DALServices dalServices;
+  DAO<JEDTO> jeDAO;
+
+  /**
+   * Class constructor.
+   * 
+   * @param dalServices The interface used to operate the database. Typically used to start
+   *        transactions and commit modifications.
+   * @param JEDAO The JE DAO (Data Access Object) used to perform operations on the database
+   *        regarding JE.
+   */
+  public JEUCCImpl(DALServices dalServices, DAO<JEDTO> jeDAO) {
+    this.dalServices = dalServices;
+    this.jeDAO = jeDAO;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public JEDTO selectCurrent() {
+    // ne pas lancer d'exception si null
+    dalServices.startTransaction();
+    JEDTO current = ((JEDAO) jeDAO).getCurrentJE();
+    dalServices.commit();
+    return current;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  public JEDTO createJE(JEDTO jeDto, List<String> companies) {
+    if (Util.anyNull(jeDto, companies)) {
+      throw new BizzException("Erreur, informations incomplète.");
+    }
+
+    JEDTO jeReturn = null;
+    // Everythings is OK, create the JE
+    dalServices.startTransaction();
+    Long newId = jeDAO.create(jeDto);
+    boolean worked = ((JEDAO) jeDAO).addParticipations(companies, newId);
+    if (newId == null) {
+      dalServices.rollback();
+      throw new BizzException("Erreur, la JE n'as pas pû être créée");
+    } else if (!worked) {
+      dalServices.rollback();
+      throw new BizzException("Erreur, les entreprises n'ont pas pû être invitée");
+    } else {
+      System.out.println("JEID=" + newId);
+      dalServices.commit();
+      jeDto.setId(newId);
+      jeReturn = jeDAO.find(jeDto);
+    }
+    return jeReturn;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  public boolean checkDates(JEDTO jeDto) {
+    if (Util.anyNull(jeDto)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    // check if there is already a JE in this academic year
+    dalServices.startTransaction();
+    boolean valid = ((JEDAO) jeDAO).checkDates(jeDto);
+    dalServices.commit();
+    if (valid) {
+      return true;
+    }
+    throw new BizzException("Erreur, il y à déjà une JE cette année académique la");
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<String> selectAllAcademicYears() {
+    dalServices.startTransaction();
+    List<String> l = ((JEDAO) jeDAO).selectAllAcademicYears();
+    dalServices.commit();
+    return l;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public JEDTO select(JEDTO jeDto) {
+    if (Util.anyNull(jeDto)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    dalServices.startTransaction();
+    JEDTO je = ((JEDAO) jeDAO).getJE(jeDto);
+    dalServices.commit();
+    if (je == null) {
+      throw new BizzException("La je n'a pas pu être trouvée.");
+    }
+    return je;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void cloture() {
+    JEDTO je = this.selectCurrent();
+    if (je.isCloturee()) {
+      throw new BizzException("Cette JE est déjà cloturée.");
+    }
+    dalServices.startTransaction();
+    ((JEDAO) jeDAO).cloture(je);
+    dalServices.commit();
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public boolean checkDateIsLatest(JEDTO jeDto) {
+    if (Util.anyNull(jeDto)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    // check if there isn't a JE after this one
+    dalServices.startTransaction();
+    JEDTO lastJE = ((JEDAO) jeDAO).getLastJE();
+    dalServices.commit();
+    if (lastJE == null) {
+      return true;
+    }
+    if (lastJE.getDateJournee().before(jeDto.getDateJournee())) {
+      return true;
+    }
+    throw new BizzException("Erreur, vous ne pouvez pas créer une JE antérieur à une autre");
+  }
+}

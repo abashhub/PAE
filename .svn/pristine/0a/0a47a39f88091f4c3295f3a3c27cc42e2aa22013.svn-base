@@ -1,0 +1,333 @@
+var informationCompany = new (function() {
+	var numVersionCompany;
+	var idCompany;
+	
+
+
+	function printInfo() {
+		console.log("test1");
+		var id = this.id;
+		console.log(id);
+		idCompany = id;
+		informationContact.setIdCompany(idCompany);
+		console.log(id);
+		// // changement de l'affichage
+		$("#afDashboard").attr('style', 'display:none');
+		$("#ajJE").attr('style', "display:none");
+		$("#ajEntreprise").attr('style', "display:none");
+		$("#ajContact").attr('style', "display:none");
+		$("#doRecherche").attr('style', "display:none");
+		$("#informations").attr('style', "display:block");
+		// // chargement des données de l'entreprise
+		if (id != "") {
+			var d = {
+				companyId : id,
+			}
+
+			var success = function(response) {
+				console.log(response);
+				toastr.success("succès");
+				console.log(response['company']);
+				informationCompany.fillInfo(response['company']);
+			}
+			var error = function(jqXHR, serverStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+			request.post('fillInfoCompany', d, success, error);
+
+			// // -----fill informations Contact
+			success = function(response) {
+				console.log(response);
+				toastr.success("succès");
+				informationContact.fillInfo(response['allContacts']);
+			}
+			error = function(jqXHR, serverStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+			request.post('fillInfoContacts', d, success, error);
+		}
+
+	}
+
+	function fillInfo(response) {
+		console.log("fill");
+		console.log(response);
+		var id = JSON.parse(response['companyId']);
+		var name = response['name'];
+		var version = JSON.parse(response['numVersion']);
+		numVersionCompany = version;
+		var adresse = response['adresseFacturation'];
+		var rue = adresse['street'];
+		var num = adresse['number'];//JSON.parse();
+		var boite = adresse['box'];
+		var codePostal = adresse['postCode'];
+		var commune = adresse['locality'];
+		console.log(response.dateFirstContact);
+		var dateFirstContact = new Date(response.dateFirstContact);
+		dateFirstContact = formattedDate(dateFirstContact);
+		
+		$('#companyNameInfo').val(name);
+		$('#companyStreetInfo').val(rue);
+		$('#companyNumberInfo').val(num);
+		$('#companyBoxInfo').val(boite);
+		$('#companyPostCodeInfo').val(codePostal);
+		$('#companyLocalityInfo').val(commune);
+		$('#companyCreatorInfo').val(response.creater.firstName +" "+response.creater.lastName)
+		$('#companyDateFirstContact').val(dateFirstContact);
+		$('.cancelChangeInformations').attr("id",idCompany);
+		
+
+	}
+	function formattedDate(d) {
+		  let month = String(d.getMonth() + 1);
+		  let day = String(d.getDate());
+		  const year = String(d.getFullYear());
+
+		  if (month.length < 2) month = '0' + month;
+		  if (day.length < 2) day = '0' + day;
+
+		  return `${month}/${day}/${year}`;
+		}
+
+	function show() {
+		console.log("okok");
+		var id = this.id;
+		console.log(id);
+		// changement de l'affichage
+		htmlHandler.showInfoCompany;
+		// chargement des données de l'entreprise
+		if (id != "") {
+			var d = {
+				companyId : id,
+			}
+
+			var success = function(response) {
+				console.log(response);
+				toastr.success("succès");
+			}
+			request.post('fillInfoCompany', d, success,
+					request.errorDefaultWithoutToast);
+		}
+	}
+
+	function save() {
+		console.log("savetest");
+		var nom = $("#companyNameInfo").val();
+		var rue = $("#companyStreetInfo").val();
+		var num = $("#companyNumberInfo").val();
+		var boite = $("#companyBoxInfo").val();
+		var codePostal = $("#companyPostCodeInfo").val();
+		var commune = $("#companyLocalityInfo").val();
+		console.log(idCompany);
+		var d = {
+			nom : $("#companyNameInfo").val(),
+			rue : $("#companyStreetInfo").val(),
+			num : $("#companyNumberInfo").val(),
+			boite : $("#companyBoxInfo").val(),
+			codePostal : $("#companyPostCodeInfo").val(),
+			commune : $("#companyLocalityInfo").val(),
+			id : idCompany,
+			version : numVersionCompany
+		}
+
+		error = function(jqXHR, serverStatus, errorThrown) {
+			console.log(jqXHR);
+			toastr.error(JSON.parse(jqXHR['responseText'])['message']);
+			if (jqXHR.status === 401) {
+				redirectToLogin();
+			} else {
+				$("#btn_creerJE").attr('style', 'display:block');
+				$("#txtJE").removeAttr("disabled");
+				$("#rmJE").attr("style", "pointer-events:auto");
+				$("#calJE").attr("style", "pointer-events:auto");
+				$("#okJE").attr("style", "display:none");
+				$("#entreprisesPartJE").attr("style", "display:none");
+			}
+		}
+
+		request.post('updateInfoCompany', d, request.successDefault, error);
+
+	}
+
+	return {
+		show : show,
+		save : save,
+		fillInfo : fillInfo,
+		printInfo : printInfo
+	}
+
+});
+
+var informationContact = new (function() {
+	var idJe;
+	var idCompany;
+	var numVersionContacts = [];
+	var numVersionParticipationContact=[];
+	
+	function fillInfo(response) {
+		console.log("fill contact");
+		console.log(response);
+		var htmlInfoContact = "";
+		
+		response.forEach(function(contact) {
+					console.log(contact);
+					numVersionContacts[contact.id] = contact.numVersion;
+					numVersionParticipationContact[contact.id]=contact.participation.numVersion;
+					console.log(numVersionContacts[contact.id]);
+					console.log("num version parti contact = "+numVersionParticipationContact[contact.id]);
+					var participation = true;
+					var choix;
+					if(numVersionParticipationContact[contact.id] == 0){
+						participation = false;
+					}
+					console.log(participation);
+					//affiche que le contact ne fait plus partie de l'entreprise
+					var desactive ="<button class=\" buttonDesactivateContact btn btn-default\" value=\""+contact.id+ "\"=>Desactiver</button>";
+					if(!contact.active){
+						desactive = "DESACTIVE";
+					}
+					//coche le bon radio button selon si le contact participe ou pas
+					if(participation){
+						choix = "<div class=\"col-sm-9\">"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"oui\" checked=\"checked\">Oui"
+						+"</label>"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"non\">Non"
+						+"</label>"
+						+"</div>"
+					}else{
+						choix = "<div class=\"col-sm-9\">"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"oui\">Oui"
+						+"</label>"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"non\" checked=\"checked\">Non"
+						+"</label>"
+						+"</div>"
+					}
+					var row = "<div class=\"col-md-12\">"
+							+ "<div id=\"\" style=\"color: red;\"></div><br/>"
+							+ "<form name=\"\" class=\"form-horizontal\" role=\"form\" id=\"\">"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Nom: "
+							
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+"</div>"
+							+"<h5>"
+							+ contact.lastName
+							+"</h5>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Prénom: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+"<h5>"
+							+ contact.firstName
+							+"</h5>"
+							+"</div>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Email: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+ "<input type=\"mail\" value=\""
+							+ contact.email
+							+ "\" class=\"form-control\" id=\"infoEmailContact"+contact.id+"\"/>"
+							+ "</div>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Téléphone: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+ "<input type=\"tel\" value=\""
+							+ contact.telephone
+							+ "\"class=\"form-control\" id=\"infoTelephoneContact"+contact.id+"\"/>"
+							+ "</div>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Participation: "
+							+ "</label>"
+							
+							+choix
+							
+							+ "<div class=\"col-sm-9\">"
+							+"</div>"
+							+"</div>"
+							+"<div class=\"col-md-1 col-md-offset-8\">"
+							+"<button class=\"buttonUpdateContact btn btn-default \" id=\""+contact.id+ "\">Sauver</button>"
+							+"</div>"		
+							+ "<div class=\"col-md-1 text-danger\" >	"
+							+ desactive
+							+ "</div>" +
+							"</form>" +
+		
+							"</div>"+ "</div>" +
+							
+							"</div>";
+					htmlInfoContact += row;
+				});
+		$('#listeContact').html(htmlInfoContact);
+	};
+	
+	function updateContact() {
+		var contactId = this.id;
+		console.log(contactId);
+		console.log("id company "+idCompany);
+		var emailContact = $('#infoEmailContact'+contactId).val();
+		var telephoneContact = $('#infoTelephoneContact'+contactId).val();
+		console.log($(this).parent().prev().find('input[type=radio][name=optradio]:checked').val());
+		var participe = $(this).parent().prev().find('input[type=radio][name=optradio]:checked').val();
+
+		var d ={
+				id : contactId,
+				version : numVersionContacts[contactId],
+				email : emailContact,
+				tel : telephoneContact,
+				versionParticipation : numVersionParticipationContact[contactId],
+				idJe:idJe,
+				idCompany:idCompany,
+		}
+
+
+		request.post('updateInfoContact', d, request.successDefault, request.errorDefault);
+		numVersionContacts[contactId] += 1;
+	}
+	
+	function desactivateContact(){
+		console.log(this);
+		var contactId = this.value;
+		console.log("desactiver contact "+contactId);
+		var d={
+				id : contactId,
+				version : numVersionContacts[contactId],
+		}
+		request.post('desactivateContact', d, request.successDefault, request.errorDefault);
+	}
+	
+	function setIdJe(id){
+		idJe = id;
+		console.log(idJe);
+	}
+	
+	function setIdCompany(id){
+		idCompany = id;
+		console.log(idCompany);
+	}
+
+	return {
+		fillInfo : fillInfo,
+		updateContact : updateContact,
+		setIdJe : setIdJe,
+		setIdCompany:setIdCompany,
+		desactivateContact : desactivateContact
+		
+
+	}
+});

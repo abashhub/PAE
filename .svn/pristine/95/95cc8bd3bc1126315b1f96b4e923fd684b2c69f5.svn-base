@@ -1,0 +1,56 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface is meant to be used by the Servlet to call methods related to a contact.
+ *
+ */
+public interface ContactUCC {
+  /**
+   * Insert a contact.
+   * 
+   * @param contactDTO a DTO (Data Transfer Object) for all the informations to insert the contact.
+   * @return the contact as he is in the data base now.
+   */
+  ContactDTO addContact(ContactDTO contactDTO);
+
+  /**
+   * Select all the contacts related to one company.
+   * 
+   * @param companyDTO a DTO (Data Transfer Object) for the id of the company.
+   * @return the list of all the contacts of the company.
+   */
+  List<ContactDTO> fillInfosContacts(CompanyDTO companyDTO);
+
+  /**
+   * Update a contact.
+   * 
+   * @param contactDTO a DTO (Data Transfer Object) for all the informations to update the contact,
+   *        its id to find it and its numVersion to know if the update can be done.
+   * @param jeCurrent a DTO (Data Transfer Object) for the id of the current je.
+   * @return the contact as he is in the data base now.
+   */
+  boolean updateContact(ContactDTO contactDTO, JEDTO jeCurrent);
+  /**
+   * Select all the informations of every contact to implement the research.
+   * 
+   * @return the list of lists of all the informations of every contact.
+   */
+  List<List<String>> getAllContactsInfoByCategory();
+  /**
+   * Select all the information.
+   * 
+   * @param companyDTO a DTO (Data Transfer Object) for the id of the company.
+   * @return the list of all the contacts of the company.
+   */
+  List<ContactDTO> searchContacts(ContactDTO c);
+
+  List<ContactDTO> getContactByCompany(CompanyDTO companyDTO);
+
+  void desactivateContact(ContactDTO contact);
+}

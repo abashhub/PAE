@@ -1,0 +1,66 @@
+package persistence.dao;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface extends DAO and adds specific methods related to Entreprise like ....().
+ * 
+ */
+public interface CompanyDAO extends DAO<CompanyDTO> {
+  /**
+   * This method returns the list of companies that has been invited in the given JE.
+   * 
+   * @param je
+   * @return List<CompanyDTO>
+   */
+  public List<CompanyDTO> findAllInvitedInJE(JEDTO je);
+
+  /**
+   * This method returns the list of companies that has not been invited in the given JE.
+   * 
+   * @param je
+   * @return List<CompanyDTO>
+   */
+  public List<CompanyDTO> findAllNotInvitedInJE(JEDTO je);
+
+
+  /**
+   * This method returns the list of companies that meet the criteria to be invited in the new JE.
+   * 
+   * @param je
+   * @return List<CompanyDTO>
+   */
+  public List<CompanyDTO> getAllCompaniesAviableForJe(JEDTO jeDto);
+
+  /**
+   * This method returns the list of companies that have been added since the laste JE to be invited
+   * in the new JE.
+   * 
+   * @param je
+   * @return List<CompanyDTO>
+   */
+  public List<CompanyDTO> getNewCompaniesAviableForJe();
+
+  /**
+   * This method insert the participation for the current JE
+   * 
+   * @param company to add and current je
+   * @return List<CompanyDTO>
+   */
+  public boolean inviteCompany(CompanyDTO companyDto, JEDTO jeCourrante);
+
+  public List<List<String>> getAllCompaniesInfoByCategory();
+
+  public CompanyDTO changeState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  public CompanyDTO cancelState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  public List<CompanyDTO> searchCompanies(CompanyDTO co);
+
+  public List<CompanyDTO> getAllToContactForJE(JEDTO je);
+  
+  public List<CompanyDTO> getAllCompanies();
+}

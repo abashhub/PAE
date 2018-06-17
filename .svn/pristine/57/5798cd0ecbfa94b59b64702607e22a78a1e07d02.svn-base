@@ -1,0 +1,15 @@
+package bizz;
+
+import bizz.dto.ContactDTO;
+
+/**
+ * 
+ * This interface is used by the ContactUCC, it declares the complicated methods necessary to manage
+ * a contact.
+ *
+ */
+public interface Contact extends ContactDTO {
+
+  void checkContact();
+
+}

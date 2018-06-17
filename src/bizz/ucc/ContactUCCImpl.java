@@ -1,0 +1,222 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.Contact;
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+import bizz.dto.ParticipationDTO;
+import exception.BizzException;
+import exception.OptimisticLockException;
+import persistence.DALServices;
+import persistence.dao.ContactDAO;
+import persistence.dao.DAO;
+import util.Util;
+
+/**
+ * This class is the implementation of ContactUCC, this implementation is meant to be used in
+ * production.
+ */
+public class ContactUCCImpl implements ContactUCC {
+  DALServices dalServices;
+  DAO<ContactDTO> contactDAO;
+
+  /**
+   * Class constructor.
+   * 
+   * @param dalServices The interface used to operate the database. Typically used to start
+   *        transactions and commit modifications.
+   * @param contactDAO The contact DAO (Data Access Object) used to perform operations on the
+   *        database regarding contacts.
+   */
+  public ContactUCCImpl(DALServices dalServices, DAO<ContactDTO> contactDAO) {
+    this.dalServices = dalServices;
+    this.contactDAO = contactDAO;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public ContactDTO addContact(ContactDTO contactDTO) {
+    if (Util.anyNull(contactDTO)) {
+      throw new BizzException("Erreur, contact incomplet.");
+    }
+    ContactDTO contactReturn = null;
+    ((Contact) contactDTO).checkContact();
+
+    // Check if contact is not already in the db (email -> index_unique)
+    ContactDTO c = ((ContactDAO) contactDAO).findByEmail(contactDTO);
+    if (c != null && !c.getEmail().isEmpty()) {
+      throw new BizzException("L'email du contact est déjà utilisé.");
+    }
+
+    // Everything is OK, we can create the contact
+    dalServices.startTransaction();
+    Long newId = contactDAO.create(contactDTO);
+    if (newId == null) {
+      // an error has occured -> rollback
+      dalServices.rollback();
+      throw new BizzException("Le contact n'a pas pu être ajouté.");
+    } else {
+      contactDTO.setId(newId);
+      contactReturn = contactDAO.find(contactDTO);
+      dalServices.commit();
+    }
+    return contactReturn;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> fillInfosContacts(CompanyDTO companyDTO, JEDTO jeCurrent) {
+    if (Util.anyNull(companyDTO, jeCurrent)) {
+      throw new BizzException("Erreur, informations incomplètes.");
+    }
+    List<ContactDTO> liste = null;
+    dalServices.startTransaction();
+    liste = ((ContactDAO) contactDAO).fillInfosContacts(companyDTO, jeCurrent);
+    if (liste == null) {
+      dalServices.rollback();
+      throw new BizzException("Erreur, aucun contact trouvé.");
+    } else {
+      dalServices.commit();
+    }
+    return liste;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public boolean updateContact(ContactDTO contactDTO, JEDTO jeCurrent) {
+    if (Util.anyNull(contactDTO, jeCurrent)) {
+      throw new BizzException("Erreur, informations incomplètes.");
+    }
+    try {
+      ((Contact) contactDTO).checkContactForUpdate();
+      updateParticipation(contactDTO, jeCurrent);
+      dalServices.startTransaction();
+      /*
+       * ParticipationDTO participation = ((ContactDAO)
+       * contactDAO).getParticipationContact(contactDTO, jeCurrent); if (participation == null &&
+       * !contactDTO.getParticipation().isCancelled()) { // insert participation ((ContactDAO)
+       * contactDAO).insertParticipation(contactDTO, jeCurrent); } else if (participation != null &&
+       * contactDTO.getParticipation().isCancelled()) { boolean success = ((ContactDAO)
+       * contactDAO).deleteParticipation(contactDTO, jeCurrent); if (!success) { throw new
+       * BizzException("La participation de ce contact n'a pas pu être modifiée."); } }
+       */
+      Long contactId = contactDAO.update(contactDTO);
+      if (contactId == null) {
+        // An error has occurred -> rollback
+        dalServices.rollback();
+        throw new BizzException("Une erreur s'est introduite, l'objet n'existe pas.");
+      } else {
+        dalServices.commit();
+      }
+    } catch (OptimisticLockException ole) {
+      throw new BizzException(ole.getMessage());
+    }
+    return true;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void updateParticipation(ContactDTO contactDTO, JEDTO jeCurrent) {
+    try {
+      if (Util.anyNull(contactDTO, jeCurrent)) {
+        throw new BizzException("Erreur, informations incomplètes.");
+      }
+      dalServices.startTransaction();
+      ParticipationDTO participation =
+          ((ContactDAO) contactDAO).getParticipationContact(contactDTO, jeCurrent);
+      if (participation == null && !contactDTO.getParticipation().isCancelled()) {
+        // insert participation
+        ((ContactDAO) contactDAO).insertParticipation(contactDTO, jeCurrent);
+      } else if (participation != null && contactDTO.getParticipation().isCancelled()) {
+        boolean success = ((ContactDAO) contactDAO).deleteParticipation(contactDTO, jeCurrent);
+        if (!success) {
+          throw new BizzException("La participation de ce contact n'a pas pu être modifiée.");
+        }
+      }
+      dalServices.commit();
+    } catch (OptimisticLockException ole) {
+      throw new BizzException(ole.getMessage());
+    }
+
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<List<String>> getAllContactsInfoByCategory() {
+    dalServices.startTransaction();
+    List<List<String>> liste = ((ContactDAO) contactDAO).getAllContactsInfoByCategory();
+    dalServices.commit();
+    if (liste == null) {
+      throw new BizzException("Erreur, impossible de charger les informations du contact.");
+    }
+    return liste;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> searchContacts(ContactDTO c) {
+    if (Util.anyNull(c)) {
+      throw new BizzException("Erreur, contact incomplet.");
+    }
+    dalServices.startTransaction();
+    List<ContactDTO> toReturn = ((ContactDAO) contactDAO).searchContacts(c);
+    dalServices.commit();
+    return toReturn;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> getContactByCompany(CompanyDTO companyDTO) {
+    if (Util.anyNull(companyDTO)) {
+      throw new BizzException("Erreur, entreprise incomplète.");
+    }
+    dalServices.startTransaction();
+    List<ContactDTO> toReturn = ((ContactDAO) contactDAO).findByCompany(companyDTO);
+    dalServices.commit();
+    return toReturn;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void desactivateContact(ContactDTO contact) {
+    if (Util.anyNull(contact)) {
+      throw new BizzException("Erreur, contact incomplet.");
+    }
+    dalServices.startTransaction();;
+    if (!((ContactDAO) contactDAO).desactivateContact(contact)) {
+      // an error has occured -> rollback
+      dalServices.rollback();
+    } else {
+      dalServices.commit();
+    }
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public int countContactsParticipating() {
+    dalServices.startTransaction();
+    int number = ((ContactDAO) contactDAO).countContactsParticipating();
+    dalServices.commit();
+    return number;
+  }
+}

@@ -1,0 +1,179 @@
+package util;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.Map;
+
+import exception.BizzException;
+
+/**
+ * Gathers utility methods.
+ */
+public final class Util {
+  public final static String PATTERN_EMAIL =
+      "^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+  public final static String PATTERN_USERNAME = "^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$";
+
+  /**
+   * Class constructor is private because this is a utility class.
+   */
+  private Util() {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Checks if any of the given objects is null. Always returns false if no argument is passed.
+   * 
+   * @param objects an unknown amount of objects. Can be 0, 1 or many.
+   * @return true if any of the objects is null, false otherwise.
+   */
+  public static boolean anyNull(Object... objects) {
+    for (Object obj : objects) {
+      if (obj == null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Checks if any of the given strings is empty. Always returns false if no argument is passed.
+   * 
+   * @param strings an unknown amount of strings. Can be 0, 1 or many.
+   * @return true if any of the strings is empty, false otherwise.
+   */
+  public static boolean anyEmptyString(String... strings) {
+    for (String str : strings) {
+      if (str == null) {
+        throw new IllegalArgumentException();
+      }
+      if (str.equals("")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Checks if a given email is valid using regex. Original pattern taken from
+   * <a href="http://w3c.github.io/html/sec-forms.html#valid-e-mail-address">W3C</a>.
+   * 
+   * @param email the email to validate.
+   * @return true if email is valid, false otherwise.
+   */
+  public static boolean isValidEmail(String email) {
+    if (email == null) {
+      throw new IllegalArgumentException();
+    }
+    return email.matches(Util.PATTERN_EMAIL);
+  }
+
+  /**
+   * Checks if a given username is valid using regex.
+   * <p>
+   * The username can contain only ASCII letters and digits, with hyphens, underscores and spaces as
+   * internal separators. The first and last character cannot be separators, and there is never more
+   * than one separator in a row.
+   * <p>
+   * Original regex pattern taken from
+   * <a href="http://stackoverflow.com/a/1223146">stackoverflow.com</a>.
+   * 
+   * @param username the username to validate
+   * @return true if username is valid, false otherwise.
+   */
+  public static boolean isValidUsername(String username) {
+    if (username == null) {
+      throw new IllegalArgumentException();
+    }
+    return username.matches(Util.PATTERN_USERNAME);
+  }
+
+  public static Date createDate(String date) {
+
+    Month mois = null;
+
+    String[] tokens = date.split(" ");
+    switch (tokens[1]) {
+      case "Janvier":
+        mois = Month.JANUARY;
+        break;
+      case "Février":
+        mois = Month.FEBRUARY;
+        break;
+      case "Mars":
+        mois = Month.MARCH;
+        break;
+      case "Avril":
+        mois = Month.APRIL;
+        break;
+      case "Mai":
+        mois = Month.MAY;
+        break;
+      case "Juin":
+        mois = Month.JUNE;
+        break;
+      case "Juillet":
+        mois = Month.JULY;
+        break;
+      case "Août":
+        mois = Month.AUGUST;
+        break;
+      case "Septembre":
+        mois = Month.SEPTEMBER;
+        break;
+      case "Octobre":
+        mois = Month.OCTOBER;
+        break;
+      case "Novembre":
+        mois = Month.NOVEMBER;
+        break;
+      case "Decembre":
+        mois = Month.DECEMBER;
+        break;
+      default:
+        break;
+    }
+    LocalDate localDate =
+        LocalDate.of(Integer.parseInt(tokens[2]), mois, Integer.parseInt(tokens[0]));
+    Date dateJe = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    return dateJe;
+  }
+
+  public static void closeQuietly(ResultSet rs, PreparedStatement ps) {
+    if (rs != null) {
+      try {
+        rs.close();
+      } catch (SQLException exc) {
+      }
+    }
+    if (ps != null) {
+      try {
+        ps.close();
+      } catch (SQLException exc) {
+      }
+    }
+  }
+
+  public static void closeQuietly(ResultSet rs) {
+    closeQuietly(rs, null);
+  }
+
+  public static void closeQuietly(PreparedStatement ps) {
+    closeQuietly(null, ps);
+  }
+
+  public static Long getLong(Map<String, Object> decodedPayload, String var, String error) {
+    Long l = null;
+    try {
+      l = Long.decode((String) decodedPayload.get(var));
+    } catch (Exception e) {
+      throw new BizzException(error);
+    }
+    return l;
+  }
+}

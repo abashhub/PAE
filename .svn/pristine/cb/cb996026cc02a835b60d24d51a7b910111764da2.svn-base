@@ -1,0 +1,34 @@
+package bizz.ucc;
+
+import bizz.dto.UserDTO;
+
+/**
+ * User Use-case Controller.
+ *
+ * <p>This interface is meant to be used by the Servlet to call methods related to a user.
+ */
+public interface UserUCC {
+  /**
+   * Checks if the user is registered in the database and if the passwords match. The user DTO
+   * should have an email and a password.
+   * 
+   * @param userDTO a DTO (Data Transfer Object).
+   * @return the full DTO of the user that just logged in if the passwords match, null otherwise.
+   */
+  UserDTO login(UserDTO userDTO);
+
+  /**
+   * Registers a user. The email has to be valid and the password has to be of a
+   * {@link bizz.User#MINIMUM_PASSWORD_LENGTH certain length}. Neither the email nor the login
+   * should be registered already, and this is ensured by looking if no user has the same email or
+   * the same login in the database.
+   * 
+   * @param userDTO a DTO (Data Transfer Object).
+   * @return the newly registered user (a DTO) if it succeeded, null otherwise.
+   */
+  UserDTO register(UserDTO userDTO);
+
+  UserDTO getUserByLogin(UserDTO userDTO);
+
+  UserDTO getUserByEmail(UserDTO userDTO);
+}

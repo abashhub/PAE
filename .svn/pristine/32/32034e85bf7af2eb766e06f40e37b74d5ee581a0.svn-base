@@ -1,0 +1,173 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.easymock.EasyMock;
+import org.junit.Before;
+import org.junit.Test;
+
+import bizz.Address;
+import bizz.CompanyImpl;
+import bizz.Participation;
+import bizz.User;
+import bizz.dto.ParticipationDTO;
+
+public class CompanyImplTest {
+
+  private User usr;
+  private Address a1;
+  private CompanyImpl comp;
+  private Participation part1, part2;
+  private List<ParticipationDTO> participations;
+
+
+  @Before
+  public void setUp() throws Exception {
+    usr = EasyMock.createMock(User.class);
+    a1 = EasyMock.createMock(Address.class);
+    part1 = EasyMock.createMock(Participation.class);
+    part2 = EasyMock.createMock(Participation.class);
+    participations = new ArrayList<ParticipationDTO>();
+    participations.add(part1);
+    participations.add(part2);
+    comp = new CompanyImpl(1L, a1, usr, "sony", new Date(2017, 04, 17), participations);
+    comp.setParticipations(participations);
+    comp.setNumVersion(5);
+
+  }
+
+  @Test
+  public void testCompanyImpl1() {
+    CompanyImpl comp2 = new CompanyImpl();
+  }
+
+  @Test
+  public void testCompanyImpl2() {
+    CompanyImpl comp2 = new CompanyImpl(2L, a1, usr, "gna", new Date(2017, 04, 17));
+  }
+
+  @Test
+  public void testCompanyImpl3() {
+    CompanyImpl comp2 = new CompanyImpl(2L, a1, usr, "gna", new Date(2017, 04, 17), participations);
+  }
+
+  @Test
+  public void testToString() {
+    assertEquals(
+        "CompanyImpl [idCompany=1, adresseFacturation=EasyMock for interface bizz.Address, createur=EasyMock for interface bizz.User, nom=sony, datePremierContact=Thu May 17 00:00:00 CEST 3917]",
+        comp.toString());
+  }
+
+  @Test
+  public void testGetParticipations() {
+    assertEquals(participations, comp.getParticipations());
+  }
+
+  @Test
+  public void testSetParticipations() {
+    List<Participation> participations1 = new ArrayList<Participation>();
+    Participation part3 = EasyMock.createMock(Participation.class);
+    participations1.add(part3);
+    comp.setParticipations(participations1);
+    assertEquals(participations1, comp.getParticipations());
+  }
+
+  @Test
+  public void testCheckRegistration1() {
+    CompanyImpl comp2 = new CompanyImpl(1L, null, usr, "sony", new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration2() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, null, new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration3() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, "", new Date(2017, 04, 17));
+    assertFalse(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testCheckRegistration4() {
+    CompanyImpl comp2 = new CompanyImpl(1L, a1, usr, "Acer", new Date(2017, 04, 17));
+    EasyMock.expect(a1.getBox()).andReturn("7");
+    EasyMock.replay(a1);
+    assertTrue(comp2.checkRegistration());
+  }
+
+  @Test
+  public void testGetNumVersion() {
+    assertEquals(5, comp.getNumVersion());
+  }
+
+  @Test
+  public void testGetCompanyId() {
+    assertEquals(new Long(1), comp.getCompanyId());
+  }
+
+  @Test
+  public void testSetCompanyId() {
+    comp.setCompanyId(5L);
+    assertEquals(new Long(5), comp.getCompanyId());
+  }
+
+  @Test
+  public void testGetCreater() {
+    assertEquals(usr, comp.getCreater());
+  }
+
+  @Test
+  public void testSetCreater() {
+    User usr2 = EasyMock.createMock(User.class);
+    comp.setCreater(usr2);
+    assertEquals(usr2, comp.getCreater());
+  }
+
+  @Test
+  public void testGetName() {
+    assertEquals("sony", comp.getName());
+  }
+
+  @Test
+  public void testSetName() {
+    comp.setName("Acer");
+    assertEquals("Acer", comp.getName());
+  }
+
+  @Test
+  public void testGetDateFirstContact() {
+    assertEquals(new Date(2017, 04, 17), comp.getDateFirstContact());
+  }
+
+  @Test
+  public void testSetDateFirstContact() {
+    Date da = new Date(2017, 05, 15);
+    comp.setDateFirstContact(da);
+    assertEquals(da, comp.getDateFirstContact());
+  }
+
+  @Test
+  public void testSetNumVersion() {
+    comp.setNumVersion(54);
+    assertEquals(54, comp.getNumVersion());
+  }
+
+  @Test
+  public void testGetAdresseFacturation() {
+    assertEquals(a1, comp.getAdresseFacturation());
+  }
+
+  @Test
+  public void testSetAdresseFacturation() {
+    Address a2 = EasyMock.createMock(Address.class);
+    comp.setAdresseFacturation(a2);
+    assertEquals(a2, comp.getAdresseFacturation());
+  }
+}

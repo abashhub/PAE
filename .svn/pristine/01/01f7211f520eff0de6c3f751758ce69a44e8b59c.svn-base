@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<title>JE Manager</title>
+
+<!-- Bootstrap Core CSS -->
+<link href="./vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- MetisMenu CSS -->
+<link href="./vendor/metisMenu/metisMenu.min.css" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link href="./dist/css/sb-admin-2.css" rel="stylesheet">
+
+<!-- toastr CSS -->
+<link href="./vendor/toastr/toastr.min.css" rel="stylesheet">
+
+<!-- Custom Fonts -->
+<link href="./vendor/font-awesome/css/font-awesome.min.css"
+	rel="stylesheet" type="text/css">
+
+<!-- datetimepicker -->	
+<link href="./calendar/datetimepicker/css/bootstrap-datetimepicker.min.css" rel="stylesheet" media="screen">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+	<!-- Connexion -->
+	<div class="container" id="co" style="display:block">
+		<div class="row" >
+			<div class="col-md-4 col-md-offset-4">
+				<div class="login-panel panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title">Authentification</h3>
+					</div>
+					<div class="panel-body">
+						<form name="connection_form" role="form" method="post" id="connexion">
+							<div id="error_connexion" style="color: red;"></div>
+							<fieldset>
+								<label style="width: 200px;" for="pseudo">Pseudo :</label> <input
+									placeholder="Pseudo" name="login" type="text" autofocus
+									id="login" style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="password">Mot de passe :</label> <input
+									placeholder="******" name="password" type="password"
+									id="password" style="width: 100%; margin-bottom: 10px;" /> 
+								
+							</fieldset>
+						</form>
+						<button class="btn btn-lg btn-success btn-block"
+							id="btn_connexion">Login</button>
+
+						<a href="#" id="pasInscrit">Pas encore inscrit?</a>
+					</div>
+				</div>
+			</div>
+			<div id="inscription" class="col-md-4 col-md-offset-4"
+				style="display:none">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title">Inscription</h3>
+					</div>
+					<div class="panel-body">
+						<form name="registration_form" role="form" method="post" id="registrationForm">
+							<div id="msg_registration" style="color: red;"></div>
+							<fieldset>
+								<label style="width: 200px;" for="lastName">Nom :</label> <input
+									placeholder="Nom" name="lastName" autofocus id="nom" type="text"
+									style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="firstName">Prenom :</label> <input
+									placeholder="Prenom" name="firstName" id="prenom" type="text"
+									style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="email">Email :</label> <input
+									placeholder="Email" name="email" id="mail" type="text"
+									style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="login">Pseudo :</label> <input
+									placeholder="Pseudo" name="login" id="pseudo" type="text"
+									style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="password">Mot de passe :</label> <input
+									placeholder="******" name="password" type="password"
+									id="password" style="width: 100%; margin-bottom: 10px;" /> <label
+									style="width: 200px;" for="Cpassword">Confirmez mot de
+									passe :</label> <input placeholder="******" name="Cpassword"
+									type="password" id="Cpassword"
+									style="width: 100%; margin-bottom: 10px;" />
+							</fieldset>
+						</form>
+						<button class="btn btn-lg btn-success btn-block" id="btn_register">Inscription</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	
+	
+	
+	<!-- Commun a toutes les pages logués -->
+	
+	<div class="container" id="wrapper" style="display:none">
+
+		<!-- Navigation -->
+		<nav class="navbar navbar-default navbar-static-top" role="navigation"
+			style="margin-bottom: 0">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse"
+					data-target=".navbar-collapse">
+					<span class="sr-only">Toggle navigation</span> <span
+						class="icon-bar"></span> <span class="icon-bar"></span> <span
+						class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#" id="home">JE Manager</a>
+			</div>
+			<!-- /.navbar-header -->
+			<div class="col-md-4 col-md-offset-4">
+				<ul class="nav">
+					<li><h4><strong id="anneeScolaire">Pas de journées d'entreprises dans le système.</strong></h4></li>
+					
+				</ul>
+			</div>
+			<ul class="nav navbar-right">
+                    <!-- start: USER DROPDOWN -->
+                    <li class="dropdown">
+                        
+                    </li>
+					<li class="dropdown current-user">
+                        <a data-toggle="dropdown" data-hover="dropdown" class="dropdown-toggle" data-close-others="true" href="#" aria-expanded="false">
+                            <span class="username" id="display_username"></span> <i class="fa fa-angle-down"></i>
+                            <span class="groups" style="display:none">
+                        </span></a>
+                        <ul class="dropdown-menu">
+                            <li>                            
+                                <a href="#" id="logOut">Se déconnecter</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- end: USER DROPDOWN -->
+                </ul>
+			<!-- /.navbar-top-links -->
+
+			<div class="navbar-default sidebar" role="navigation">
+				<div class="sidebar-nav navbar-collapse">
+					<ul class="nav" id="side-menu">
+						<br><br>
+						<li><a href="#" id="dashboard">Dashboard</a></li>
+						<li><a href="#">Ajouter<span class="fa arrow"></span></a>
+							<ul class="nav nav-second-level">
+								<li><a href="#" id="ajoutEntreprise">Ajouter une entreprise</a></li>
+								<li><a href="#" id="ajoutContact">Ajouter un contact</a></li>
+							</ul> <!-- /.nav-second-level --></li>
+						<li><a href="#" id="recherche">Recherche</a></li>
+						<li><a href="#" id="ajoutJE">Ajouter JE</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+		
+		
+		
+		
+		
+		<div id="page-wrapper">
+		
+		<!-- DASHBOARD -->
+		<div id="afDashboard" name="dash" style="display:block">
+
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Informations générales</h1>
+				</div>
+			</div>
+			<div class="row col-lg-12">
+				<h3 class="cloture" id="cloture_msg" style="display:none">Cloturée</h3>
+				<ul class="nav">
+					<li id="en_tete_date_JE"></li>
+					<li id="en_tete_lancement_invit"></li>
+					<li id="entreprises_invitees"></li>
+					<li id="entreprises_confirmees"></li>
+					<li id="contacts_presents"></li>
+				</ul>
+			</div>
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Entreprises invitées</h1>
+				</div>
+			</div>
+			<!-- /.row -->
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">Entreprises invitées</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+						<div class="table-responsive">
+							<table class="table table-striped table-bordered table-hover"
+								>
+								<thead>
+									<tr>
+										<th>Nom de l'entreprise</th>
+										<th>État</th>
+										<th>Action</th>
+									</tr>
+								</thead>
+								<tbody id=table_entreprises_invitees>
+									
+								</tbody>
+							</table>
+							<!-- /.table-responsive -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+				</div>
+				<!-- /.col-lg-12 -->
+			</div>
+			</div>
+			<!-- /.row -->
+			<div class="row inivtation_dash">
+				<div class="col-lg-12">
+					<h1 class="page-header">Entreprises à inviter</h1>
+				</div>
+			</div>
+
+			<div class="row inivtation_dash" >
+				<div class="col-md-9">
+					<label for="entreprisesAInviter" class="col-md-2 control-label col-lg-3">Choisissez l'entreprise:</label>
+					<div class="col-md-8">
+						<select class="form-control" id="entreprisesAInviter">
+						</select>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div>
+						<button class="btn btn-default" id="dash_invite">Inviter</button>
+					</div>
+					<button class="btn btn-default" id="newCompaniesToContact">Exporter dernières invitations</button>
+					<button class="btn btn-default" id="companiesToContact">Exporter entreprises à contacter</button>
+				</div>
+				<div class="col-md-1">
+						<button class="btn btn-default" id="btn_cloture">Clôturer la journée d'entreprise</button>
+				</div>
+			</div>
+			<br/>
+			<br/>
+			<br/>
+		</div>
+		
+			
+		<!-- /fin dashboard -->
+			
+			<!-- Ajout contact -->
+			
+			
+	<div id="ajContact" style="display:none">
+
+	<div class="row">
+		<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Ajouter une personne de contact</h1>
+				</div>
+		</div>
+		<div class="col-md-7">
+			<div id="msg_addContact" style="color: red;"></div><br/>
+			<form name="addContact_form" class="form-horizontal" role="form" id="addContact">
+				<div class="form-group">	 
+					<label for="nomContact" class="col-sm-2 control-label">
+						Nom:
+					</label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" id="nomContact" />
+					</div>
+				</div>
+				<div class="form-group">		 
+					<label for="prenomContact" class="col-sm-2 control-label">
+						Prénom:
+					</label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" id="prenomContact" />
+					</div>
+				</div>
+				<div class="form-group">
+					 
+					<label for="mailContact" class="col-sm-2 control-label">
+						Email:
+					</label>
+					<div class="col-sm-10">
+						<input type="email" class="form-control"id="mailContact"/>
+					</div>
+				</div>
+				<div class="form-group">
+					 
+					<label for="telContact" class="col-sm-2 control-label">
+						Téléphone:
+					</label>
+					<div class="col-sm-10">
+						<input type="tel" class="form-control" id="telContact"/>
+					</div>				
+				</div>
+				<div class="form-group">
+					 
+					<label for="entrepriseContact" class="col-sm-2 control-label">
+						Entreprise:
+					</label>
+					<div class="col-sm-10 col-md-10">
+						<select id="companyToSelect" class="form-control">
+							<option value='' selected></option>
+							<option value='1'>Riot</option>
+							<option value='2'>Activision</option>
+							<option value='3'>Unity</option>
+						</select>
+					</div>
+				</div>
+			</form>
+		</div>
+		<div class="col-md-5">
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-5">
+		</div>
+		<div class="col-md-7">
+			<button class="btn btn-default" id="btn_saveContact">Sauver</button>
+			<button class="btn btn-default" id="btn_cancelContact">Annuler</button>
+		</div>
+	</div>
+			
+	</div>
+	
+	<!--  fin Ajouter une personne de contact -->
+	
+	
+	<!-- Ajouter entreprise -->
+	
+	
+	<div id="ajEntreprise" style="display:none">
+
+	<div class="row">
+		<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Ajouter une entreprise</h1>
+				</div>
+		</div>
+		<div id="error_addCompany" style="color:red"></div>
+		<div class="col-md-7">
+			<form class="form-horizontal" role="form" id="addCompany1" name="form_addCompany">
+				<div class="form-group">	 
+					<label for="nomEntreprise" class="col-sm-2 control-label">
+						Nom:
+					</label>
+					<div class="col-sm-10">
+						<input type="text" class="form-control" name="nomEntreprise" id="nomEntreprise" />
+					</div>
+				</div>
+		
+			</form>
+		</div>
+		
+	</div>
+	<div class="row">
+		<div class="col-md-12">
+			<fieldset>
+			<legend>Adresse de facturation</legend>
+			<form class="form-horizontal" role="form" id="addCompany2" >
+						
+				<div class="col-md-12">
+				
+				<div class="col-md-4">
+				<div class="form-group">		 
+					<label for="rueEntreprise" class="col-sm-3 control-label">
+						Rue:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="rueEntreprise" id="rueEntreprise" />
+					</div>
+				</div>
+				</div>
+				<div class="col-md-4">
+				<div class="form-group">
+					 
+					<label for="nrEntreprise" class="col-sm-3 control-label">
+						Numéro:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="nrEntreprise" id="nrEntreprise"/>
+					</div>
+				</div>
+				</div>
+				<div class="col-md-4">
+				<div class="form-group">
+					 
+					<label for="bteEntreprise" class="col-sm-3 control-label">
+						Boîte:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="bteEntreprise" id="bteEntreprise"/>
+					</div>				
+				</div>
+				</div>
+				
+				</div>
+				</form>
+				</fieldset>
+				</div>
+				
+				
+		
+		</div>
+
+		
+		
+		<div class="row">
+		<div class="col-md-12">
+				<form class="form-horizontal" role="form" id="addCompany3" >
+				
+				<div class="col-md-12">
+				
+				<div class="col-md-6">
+				<div class="form-group">		 
+					<label for="cpEntreprise" class="col-sm-3 control-label">
+						Code Postal:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="cpEntreprise" id="cpEntreprise" />
+					</div>
+				</div>
+				</div>
+				<div class="col-md-6">
+				<div class="form-group">		 
+					<label for="communeEntreprise" class="col-sm-3 control-label">
+						Commune:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" name="communeEntreprise" id="communeEntreprise" />
+					</div>
+				</div>
+				</div>
+				<div class="col-md-4">
+				
+				</div>
+				
+				</div>
+				
+			</form>	
+		
+		</div>
+	</div>	
+		
+		
+		
+		
+	<br>
+	<br>
+	<div class="row">
+		<div class="col-md-10">
+		</div>
+		<div class="col-md-2">
+			<button class="btn btn-default" id="btn_save">Sauver</button>
+			<button class="btn btn-default" id="btn_cancel">Annuler</button>
+		</div>
+	</div>
+			
+	</div>
+	
+	
+	<!--  FIN AJOUTER ENTREPRISE -->
+	
+	
+	<!-- AJOUTER JE -->
+	
+	
+	<div id="ajJE" style="display:none">
+		<div class="row">
+			<div class="row">
+					<div class="col-lg-12">
+						<h1 class="page-header">Ajouter une journée d'entreprise</h1>
+					</div>
+			</div>
+			
+		<div class="form-group">
+			<label for="dtp_input2" class="col-md-1 control-label">Date:</label>
+			<div class="input-group date form_date col-md-3" data-date="" data-date-format="dd MM yyyy" data-link-field="dtp_input2" data-link-format="yyyy-mm-dd">
+				<input id="txtJE" class="form-control" size="16" type="text" value="" readonly>
+				<span id="rmJE" class="input-group-addon"><span class="glyphicon glyphicon-remove"></span></span>
+				<span id="calJE" class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+				
+				
+			</div>
+			
+			<input type="hidden" id="dtp_input2" value="" /><br/>
+			<div>
+				<label for="select_annee_Academique" class="col-md-2 control-label">Année academique:</label>
+				<div class="col-md-2">
+				<select class="selectpicker form-control" id="select_annee_Academique">
+						<option></option>
+ 						<option id="anneeAcademique1"></option>
+  						<option id="anneeAcademique2"></option>
+				</select>
+				</div>
+				<div class="col-md-5">
+				
+					<button class="btn btn-default" id="btn_creerJE">Créer</button>
+					<p id="okJE" style="display:none" class="fa fa-check"/>
+				</div>
+			</div>
+		</div>
+	
+		</div>
+		
+		<div class="row" id="entreprisesPartJE" style="display:none">
+			<div class="row">
+				<div class="col-lg-12">
+					<h1 class="page-header">Sélection des entreprises à inviter</h1>
+			</div>
+			</div>
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">Entreprises ayant participé dans les 4 ans</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<table width="100%"
+								class="table table-striped table-bordered table-hover"
+								>
+								<thead>
+									<tr>
+										<th>Nom de l'entreprise</th>
+										
+										<th></th>
+									</tr>
+								</thead>
+								<tbody id="entreprisesPartJETbody">
+									<tr class="odd gradeX">
+										<td>C</td>
+										
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+									</tr>
+									<tr class="even gradeC">
+										<td>B</td>
+										
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+
+									</tr>
+									<tr class="odd gradeA">
+										<td>A</td>
+										
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+								</tbody>
+							</table>
+							<!-- /.table-responsive -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+				</div>
+				<!-- /.col-lg-12 -->
+				
+					<!-- TAB2 -->
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">Nouvelles entreprises</div>
+						<!-- /.panel-heading -->
+						<div class="panel-body">
+							<table width="100%"
+								class="table table-striped table-bordered table-hover"
+								id="dataTables-new_companies">
+								<thead>
+									<tr>
+										<th>Nom de l'entreprise</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody id="tableau_new_Entreprise">
+									<tr class="odd gradeX">
+										<td>C</td>
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+									</tr>
+									<tr class="even gradeC">
+										<td>B</td>
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+
+									</tr>
+									<tr class="odd gradeA">
+										<td>A</td>
+										<td><button><span class="input-group-addon"><span class="fa fa-times"/></span></button></td>
+								</tbody>
+							</table>
+							<!-- /.table-responsive -->
+						</div>
+						<!-- /.panel-body -->
+					</div>
+					<!-- /.panel -->
+				</div>
+				<!-- /.col-lg-12 -->
+				<div class="row">
+					<div class="col-md-12">
+						<div class="col-md-6">
+							<div class="col-md-8"></div>
+							<div class="col-md-4">
+								<button class="btn btn-default" id="btn_saveJE">Confirmer</button>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<button class="btn btn-default" id="btn_cancelJE">Annuler</button>
+						</div>
+					</div>
+				</div>
+				<br>
+			</div>
+			
+	</div>
+	<!-- FIN AJOUT JE -->
+	
+	
+	<!-- DEbut RECHERCHES -->
+	<div id="doRecherche" style="display:none">
+			<div class="row">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1 class="page-header">Effectuer une recherche</h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<h3 class="page-header">Recherche d'entreprise</h3>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div id="" style="color: red;"></div><br/>
+					<form name="recherche_entreprise_form" class="form-horizontal" role="form" id="recherche_entreprise_form">
+						<div class="form-group col-md-8">	 
+							<label for="" class="col-sm-2 control-label">
+								Nom:
+							</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control" name="name" id="name_tags"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-2 control-label">
+								Rue:
+							</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control" name="street" id="streets_tags"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-2 control-label">
+								Code postal:
+							</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control" name="postal_code" id="locality_tags"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-2 control-label">
+								Commune:
+							</label>
+							<div class="col-sm-10">
+								<input type="text" class="form-control" name="municipality" id="locality_name_tags"/>
+							</div>
+						</div>
+					</form>
+					<div class="col-md-4">
+						<button class="btn btn-default" id="recherche_entreprise_btn">Rechercher</button>
+					</div>
+				</div>
+	
+	
+				<div class="row">
+					<div class="col-lg-12">
+						<h3 class="page-header">Recherche de journée d'entreprise</h3>
+					</div>
+				</div>
+			
+				<div class="col-md-7">
+				
+					<label class="col-sm-2 control-label">Année:</label>
+				
+					<div class="col-sm-10">
+						<select class="selectpicker form-control" id="search_select_annee">
+							<option></option>
+						</select>
+					</div>
+				</div>
+				<div class="col-md-5">
+					<button class="btn btn-default" id="recherche_je_btn">Rechercher</button>
+				</div>
+		
+			
+				<div class="row">
+					<div class="col-lg-12">
+						<h3 class="page-header">Recherche de personne de contact</h3>
+					</div>
+				</div>
+				<div class="col-md-12">
+					<div id="" style="color: red;"></div><br/>
+					<form name="" class="form-horizontal" role="form" id="recherche_contact_form">
+						<div class="form-group col-md-8">	 
+							<label for="" class="col-sm-3 control-label">
+								Nom du contact:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" name="last_name" id="contact_lastname_tag" />
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Prénom du contact:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" name="first_name" id="contact_firstname_tag"/>
+							</div>
+						</div>
+					</form>
+					<div class="col-md-4">
+						<button class="btn btn-default" id="recherche_contact_btn">Rechercher</button>
+					</div>
+				</div>
+			</div>
+			<div class="row" id="searchResult">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1 class="page-header">Résultats</h1>
+					</div>
+				</div>
+				<div class="col-lg-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading" id="search_title">
+                            Résultats correspondant à la recherche
+                        </div>
+                        <div class="panel-body" id="search_complement"></div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered table-hover" id="search_table_result">
+                                    <thead>
+                                        <tr>
+                                            
+                                          
+                                        </tr>
+                                    </thead>
+                                    <tbody >
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- /.table-responsive -->
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+			</div>
+		</div>
+		<br>
+	
+		<!-- FIN RECHERCHES -->
+		
+		<!-- DEBUT INFOS -->
+		<div id="informations" style="display:none">
+			<div class="row">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1 class="page-header">Informations</h1>
+					</div>
+				</div>
+				<div class="col-md-8">
+				<form name="" class="form-horizontal" role="form" id="">
+					<label for="" class="col-sm-3 control-label">
+									Nom:
+					</label>
+					<div class="col-sm-9">
+						<input type="text" class="form-control" id="companyNameInfo" />
+					</div>
+					</form>
+				</div>
+				<br>
+				<br>
+				<br>
+				<div class="col-md-12">
+				<fieldset>
+					<legend> Adresse de facturation</legend>
+				<div class="col-md-12">
+					<div id="" style="color: red;"></div><br/>
+					<form name="" class="form-horizontal" role="form" id="">
+						
+						<div class="form-group col-md-8">	 
+							<label for="" class="col-sm-3 control-label">
+								Rue:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyStreetInfo" />
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Numéro:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyNumberInfo"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Boîte:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyBoxInfo"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Code postal:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyPostCodeInfo"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Commune:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyLocalityInfo"/>
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Createur:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyCreatorInfo" />
+							</div>
+						</div>
+						<div class="form-group col-md-8">		 
+							<label for="" class="col-sm-3 control-label">
+								Date premier contact:
+							</label>
+							<div class="col-sm-9">
+								<input type="text" class="form-control" id="companyDateFirstContact" />
+							</div>
+						</div>	
+					</form>
+				</div>
+				</fieldset>
+				</div>
+				<div class="row">
+					<div class="col-lg-12">
+						<h3 class="page-header"></h3>
+					</div>
+				</div>
+				<div class="col-md-1">
+							<button class="btn btn-default" id="btnSaveChangeCompany">Sauver</button>
+				</div>
+				<br>
+				<br>
+				<br>
+				<div class="col-md-12">
+					<fieldset>
+					<br/>
+						<div class="col-md-11">
+						<legend>Personne de contact</legend>
+						</div>
+						<div class="col-md-1">
+							<button class="btn btn-default" id="informationAjouterContact">Ajouter</button>
+						</div>	
+						<div class="row">
+							<div class="col-lg-12">
+								<h3 class="page-header"></h3>
+							</div>
+						</div>
+					<div class="col-md-12" id="listeContact">
+						<div class="col-md-12" >
+							<div id="" style="color: red;"></div><br/>
+							<form name="" class="form-horizontal" role="form" id="">
+								<div class="form-group col-md-6">	 
+									<label for="" class="col-sm-3 control-label">
+										Nom:
+									</label>
+									<div class="col-sm-9">
+									<h5>
+									</h5>
+									</div>
+								</div>
+								<div class="form-group col-md-6">		 
+									<label for="" class="col-sm-3 control-label">
+										Prénom:
+									</label>
+									<div class="col-sm-9">
+									<h5>
+									</h5>
+									</div>
+								</div>
+								<div class="form-group col-md-6">		 
+									<label for="" class="col-sm-3 control-label">
+										Email:
+									</label>
+									<div class="col-sm-9">
+										<input type="mail" class="form-control" id=""/>
+									</div>
+								</div>
+								<div class="form-group col-md-6">		 
+									<label for="" class="col-sm-3 control-label">
+										Téléphone:
+									</label>
+									<div class="col-sm-9">
+										<input type="tel" class="form-control" id=""/>
+									</div>
+								</div>
+								<div class="form-group col-md-6">		 
+									<label for="" class="col-sm-3 control-label">
+										Participation:
+									</label>
+									<div class="col-sm-9">
+										<label class="radio-inline">
+											<input type="radio" name="optradio">Oui
+										</label>
+										<label class="radio-inline">
+											<input type="radio" name="optradio">Non
+										</label>
+									</div>
+								</div>
+								<div class="col-md-1 col-md-offset-8">
+									<button class="btn btn-default" id="">Sauver</button>
+								</div>
+								<div class="col-md-1">
+									<button class="btn btn-default" id="">Desactiver</button>
+								</div>
+							</form>
+						</div>
+						</div>
+						<div class="row">
+							<div class="col-lg-12">
+								<h3 class="page-header"></h3>
+							</div>
+						</div>
+					</fieldset>
+				</div>
+				<div class="col-md-offset-8">
+					<button class=" cancelChangeInformations btn btn-default" id="">Annuler</button>
+				</div>		
+				
+			</div>
+			<br>	
+			<br>	
+			<br>
+		</div>
+		
+		<!--  FIN INFOS -->
+	
+	</div>
+	
+	<!-- FIN CONTENU PAGE -->
+</div>
+
+	<!-- FIN ENTETE COMMUN -->
+				
+			
+	
+	
+	
+	
+	
+	
+
+	
+	
+	
+	
+	<!-- jQuery -->
+	<script src="./vendor/jquery/jquery.min.js"></script>
+	
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<!-- Bootstrap Core JavaScript -->
+	<script src="./vendor/bootstrap/js/bootstrap.min.js"></script>
+	<!-- Metis Menu Plugin JavaScript -->
+	<script src="./vendor/metisMenu/metisMenu.min.js"></script>
+	<!-- Custom Theme JavaScript -->
+	<script src="./dist/js/sb-admin-2.js"></script>
+	<!-- DataTables JavaScript -->
+	<script src="./vendor/datatables/js/jquery.dataTables.min.js"></script>
+	<script src="./vendor/datatables-plugins/dataTables.bootstrap.min.js"></script>
+	<script src="./vendor/datatables-responsive/dataTables.responsive.js"></script>
+	<!-- toastr -->
+	<script src="./vendor/toastr/toastr.min.js"></script>
+	<!-- datetimepicker -->
+	<script type="text/javascript" src="../calendar/datetimepicker/js/bootstrap-datetimepicker.js" charset="UTF-8"></script>
+	<script type="text/javascript" src="../calendar/datetimepicker/js/locales/bootstrap-datetimepicker.fr.js" charset="UTF-8"></script>
+	<!-- Script perso -->
+	<script src="./js/htmlHandler.js"></script>
+	<script src="./js/Company.js"></script>
+	<script src="./js/Contact.js"></script>
+	<script src="./js/information.js"></script>
+	<script src="./js/updateData.js"></script>
+	<script src="./js/common.js"></script>
+	<script src="./js/genCSV.js"></script>
+	
+	<script src="./js/search.js"></script>
+	
+	
+	<script src="./js/login.js"></script>
+	<script src="./js/Je.js"></script>
+	
+	
+
+	<script src="./js/listeners.js"></script>
+	
+
+	
+	<script>
+	<!-- Page-Level Demo Scripts - Tables - Use for reference -->
+		$(document).ready(function() {
+			$('#dataTables-example').DataTable({
+				responsive : true
+			});
+		});
+	<!-- display calendar -->	
+		$('.form_date').datetimepicker({
+	        language:  'fr',
+	        weekStart: 1,
+	        todayBtn:  1,
+			autoclose: 1,
+			todayHighlight: 1,
+			startView: 2,
+			minView: 2,
+			forceParse: 0
+	    });
+	</script>
+
+</body>
+
+</html>

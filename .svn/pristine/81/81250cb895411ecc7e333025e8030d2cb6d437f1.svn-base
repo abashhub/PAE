@@ -1,0 +1,430 @@
+var informationCompany = new (function() {
+	var numVersionCompany;
+	var idCompany;
+	var idJe;
+
+	function printInfo() {
+		var id = this.id;
+		console.log(id);
+		idCompany = id;
+		informationContact.setIdCompany(idCompany);
+		console.log(id);
+		// // changement de l'affichage
+		$("#afDashboard").attr('style', 'display:none');
+		$("#ajJE").attr('style', "display:none");
+		$("#ajEntreprise").attr('style', "display:none");
+		$("#ajContact").attr('style', "display:none");
+		$("#doRecherche").attr('style', "display:none");
+		$("#informations").attr('style', "display:block");
+		// // chargement des données de l'entreprise
+		if (id != "") {
+			var d = {
+				companyId : id,
+				idJe : idJe
+			}
+
+			var success = function(response) {
+				toastr.success("succès");
+				console.log(response['company']);
+				informationCompany.fillInfo(response['company']);
+			}
+			var error = function(jqXHR, serverStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+			request.post('fillInfoCompany', d, success, error);
+
+			// // -----fill informations Contact
+			success = function(response) {
+				console.log(response);
+				toastr.success("succès");
+				informationContact.fillInfo(response['allContacts']);
+			}
+			error = function(jqXHR, serverStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+			request.post('fillInfoContacts', d, success, error);
+		}
+
+	}
+
+	function fillInfo(response) {
+		console.log("fill");
+		console.log(response);
+		var id = JSON.parse(response['companyId']);
+		var name = response['name'];
+		var version = JSON.parse(response['numVersion']);
+		numVersionCompany = version;
+		var adresse = response['adresseFacturation'];
+		var rue = adresse['street'];
+		var num = adresse['number'];//JSON.parse();
+		var boite = adresse['box'];
+		var codePostal = adresse['postCode'];
+		var commune = adresse['locality'];
+		console.log(response.dateFirstContact);
+		var dateFirstContact = new Date(response.dateFirstContact);
+		dateFirstContact = formattedDate(dateFirstContact);//format américain
+		var dateFirstContact = dateFirstContact.replace(/(\d\d)\/(\d\d)\/(\d{4})/, "$2/$1/$3");//transformation dd/mm/yyyy
+		
+		$('#companyNameInfo').val(name);
+		$('#companyStreetInfo').val(rue);
+		$('#companyNumberInfo').val(num);
+		$('#companyBoxInfo').val(boite);
+		$('#companyPostCodeInfo').val(codePostal);
+		$('#companyLocalityInfo').val(commune);
+		$('#companyCreatorInfo').val(response.creater.firstName +" "+response.creater.lastName)
+		$('#companyDateFirstContact').val(dateFirstContact);
+		$('.cancelChangeInformations').attr("id",idCompany);
+		
+
+	}
+	
+	function setIdJe(id){
+		idJe = id;
+	}
+	
+	function formattedDate(d) {
+		  let month = String(d.getMonth() + 1);
+		  let day = String(d.getDate());
+		  const year = String(d.getFullYear());
+
+		  if (month.length < 2) month = '0' + month;
+		  if (day.length < 2) day = '0' + day;
+
+		  return `${month}/${day}/${year}`;
+		}
+
+	function show() {
+		console.log("okok");
+		var id = this.id;
+		console.log(id);
+		// changement de l'affichage
+		htmlHandler.showInfoCompany;
+		// chargement des données de l'entreprise
+		if (id != "") {
+			var d = {
+				companyId : id,
+			}
+			var success = function(response) {
+				console.log(response);
+				toastr.success("succès");
+			}
+			request.post('fillInfoCompany', d, success,
+					request.errorDefaultWithoutToast);
+		}
+	}
+
+	function save() {
+		console.log("savetest");
+		var nom = $("#companyNameInfo").val();
+		var rue = $("#companyStreetInfo").val();
+		var num = $("#companyNumberInfo").val();
+		var boite = $("#companyBoxInfo").val();
+		var codePostal = $("#companyPostCodeInfo").val();
+		var commune = $("#companyLocalityInfo").val();
+		console.log(idCompany);
+		var d = {
+			nom : $("#companyNameInfo").val(),
+			rue : $("#companyStreetInfo").val(),
+			num : $("#companyNumberInfo").val(),
+			boite : $("#companyBoxInfo").val(),
+			codePostal : $("#companyPostCodeInfo").val(),
+			commune : $("#companyLocalityInfo").val(),
+			id : idCompany,
+			version : numVersionCompany
+		}
+		
+		if(d['nom'] === ''){
+			toastr.warning("Entrez un nom d'entreprise valide.")
+			return;
+		}
+		if(d['rue'] === ''){
+			toastr.warning("Entrez une rue valide.");
+			return;
+		}
+		if(d['num'] === ''){
+			toastr.warning("Entrez un numéro valide.");
+			return;
+		}
+		if(isNaN(d['codePostal'])){
+			toastr.warning("Entrez un code postal valide.");
+			return;
+		}
+		if(d['commune'] === ''){
+			toastr.warning("Entrez une commune valide.");
+			return;
+		}
+
+		var success = function(response){
+			console.log(response);
+			toastr.success("succès");
+			numVersionCompany++;
+		}
+
+		error = function(jqXHR, serverStatus, errorThrown) {
+			console.log(jqXHR);
+			toastr.error(JSON.parse(jqXHR['responseText'])['message']);
+			if (jqXHR.status === 401) {
+				redirectToLogin();
+			} else {
+				$("#btn_creerJE").attr('style', 'display:block');
+				$("#txtJE").removeAttr("disabled");
+				$("#rmJE").attr("style", "pointer-events:auto");
+				$("#calJE").attr("style", "pointer-events:auto");
+				$("#okJE").attr("style", "display:none");
+				$("#entreprisesPartJE").attr("style", "display:none");
+			}
+		}
+		request.post('updateInfoCompany', d, success, error);
+	}
+	return {
+		show : show,
+		save : save,
+		fillInfo : fillInfo,
+		printInfo : printInfo,
+		setIdJe : setIdJe
+	}
+});
+
+var informationContact = new (function() {
+	var idJe;
+	var idCompany;
+	var numVersionContacts = [];
+	var numVersionParticipationContact=[];
+	var isManager = true;
+	
+	function fillInfo(response) {
+		console.log(response);
+		var htmlInfoContact = "";
+		
+		response.forEach(function(contact) {
+					console.log(contact);
+					numVersionContacts[contact.id] = contact.numVersion;
+					numVersionParticipationContact[contact.id]=contact.participation.numVersion;
+					console.log(numVersionContacts[contact.id]);
+					console.log("num version parti contact = "+numVersionParticipationContact[contact.id]);
+					var choix;
+					
+					var participation = true;
+					if(numVersionParticipationContact[contact.id] == 0){
+						participation = false;
+					}
+					
+					//affiche que le contact ne fait plus partie de l'entreprise
+					var desactive ="<button onClick=\"informationContact.desactivateContact(this," + contact.id + ")\" class=\" buttonDesactivateContact btn btn-default\" value=\""+contact.id+ "\"=>Desactiver</button>";
+					var buttonSauver = "";
+					
+					if(!isManager){
+						buttonSauver = "<button class=\"buttonUpdateParticipationContact btn btn-default \" id=\"" + contact.id + "\">Particiaption</button>";
+					}else{
+						buttonSauver = "<button class=\"buttonUpdateContact btn btn-default \" id=\"" + contact.id + "\">Sauver</button>";
+					}
+					if(!contact.active){
+						desactive = "DESACTIVE";
+						buttonSauver = "";
+					}
+					
+					//coche le bon radio button selon si le contact participe ou pas
+					if(participation){
+						choix = "<div class=\"col-sm-9\">"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"oui\" checked=\"checked\">Oui"
+						+"</label>"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"non\">Non"
+						+"</label>"
+						+"</div>"
+					}else{
+						choix = "<div class=\"col-sm-9\">"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"oui\">Oui"
+						+"</label>"
+						+"<label class=\"radio-inline\">"
+						+"<input type=\"radio\" name=\"optradio\" value=\"non\" checked=\"checked\">Non"
+						+"</label>"
+						+"</div>"
+					}
+					
+					var row = "<div class=\"col-md-12\">"
+							+ "<div id=\"\" style=\"color: red;\"></div><br/>"
+							+ "<form name=\"\" class=\"form-horizontal\" role=\"form\" id=\"\">"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Nom: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+"<h5>"
+							+ "<input type=\"mail\" value=\""
+							+ contact.lastName
+							+ "\" class=\"form-control\" id=\"infoLastNameContact"+contact.id+"\"/>"
+							+"</h5>"
+							+ "</div>"
+							+"</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Prénom: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+"<h5>"
+							+ "<input type=\"mail\" value=\""
+							+ contact.firstName
+							+ "\" class=\"form-control\" id=\"infoFirstNameContact"+contact.id+"\"/>"
+							+"</h5>"
+							+"</div>"
+							+"</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Email: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+ "<input type=\"mail\" value=\""
+							+ contact.email
+							+ "\" class=\"form-control\" id=\"infoEmailContact"+contact.id+"\"/>"
+							+ "</div>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Téléphone: "
+							+ "</label>"
+							+ "<div class=\"col-sm-9\">"
+							+ "<input type=\"tel\" value=\""
+							+ contact.telephone
+							+ "\"class=\"form-control\" id=\"infoTelephoneContact"+contact.id+"\"/>"
+							+ "</div>"
+							+ "</div>"
+							+ "<div class=\"form-group col-md-6\">"
+							+ "<label for=\"\" class=\"col-sm-3 control-label\">"
+							+ "Participation: "
+							+ "</label>"
+							+choix
+							+"</div>"
+							/*+"<div class=\"col-md-1 col-md-offset-8\">"
+							+"<button class=\"buttonUpdateContact btn btn-default \" id=\""+contact.id+ "\">Sauver</button>"
+							+"</div>"		
+							+ "<div class=\"col-md-1 text-danger\" >"
+							+ desactive
+							+ "</div>"*/ 
+							+ "</form>"
+							+ "<div class=\"col-md-1 col-md-offset-8\">"
+							+ buttonSauver
+							+ "</div>"
+							+ "<div class=\"col-md-1 col-md-offset-1\">"
+							+ desactive 
+							+ "</div>"
+							+ "</div>"
+							+ "</div>";				
+					
+					htmlInfoContact += row;
+				});
+		$('#listeContact').html(htmlInfoContact);
+	};
+	
+	function updateContact() {
+		var contactId = this.id;
+		console.log(contactId);
+		console.log("id company "+idCompany);
+		var emailContact = $('#infoEmailContact'+contactId).val();
+		var telephoneContact = $('#infoTelephoneContact'+contactId).val();
+		console.log($(this).parent().prev().find('input[type=radio][name=optradio]:checked').val());
+		var participe = $(this).parent().prev().find('input[type=radio][name=optradio]:checked').val();
+		var prenomContact = $('#infoFirstNameContact'+contactId).val();
+		var nomContact = $('#infoLastNameContact'+contactId).val();
+		console.log(prenomContact);
+		var user = $("#display_username").html();
+		console.log("AAAA:  "+ user);
+		
+		
+		
+		var d = {
+				id : contactId,
+				version : numVersionContacts[contactId],
+				email : emailContact,
+				tel : telephoneContact,
+				versionParticipation : numVersionParticipationContact[contactId],
+				idJe : idJe,
+				idCompany : idCompany,
+				participe : participe,
+				firstName : prenomContact,
+				lastName : nomContact
+		}
+
+		if(d['lastName'] === ''){
+			toastr.warning("Entrez le nom du contact.");
+			return;
+		}
+		if(d['firstName'] === ''){
+			toastr.warning("Entrez le prénom du contact.");
+			return;
+		}
+		if(d['email'] === '' && d['tel'] === ''){
+			toastr.warning("Entrez le numéro de téléphone du contact et/ou son adresse email.");
+			return;
+		}
+
+		var success =  function(response) {
+			toastr.success(response['message']);
+			numVersionContacts[contactId] += 1;
+		}
+		request.post('updateInfoContact', d, success, request.errorDefault);
+	}
+	
+	function updateParticipation(){
+		var contactId = this.id;
+		var participe = $(this).parent().prev().find('input[type=radio][name=optradio]:checked').val();
+		
+		var d = {
+				id : contactId,
+				idJe : idJe,
+				idCompany : idCompany,
+				participe : participe,
+		}
+		
+		var success =  function(response) {
+			toastr.success(response['message']);
+		}
+		request.post('updateParticipationContact', d, success, request.errorDefault);
+	}
+	
+	function desactivateContact(elem, contactId){
+		console.log("contactId ---> " + contactId);
+		var d = {
+				id : contactId,
+				version : numVersionContacts[contactId],
+		}
+		var success =  function(response) {
+			toastr.success(response['message']);
+			//$(elem.parentElement.parentElement).replaceWith( "<div class=\"col-md-1 col-md-offset-8\">DESACTIVE</div>" );
+			$("button.buttonDesactivateContact").replaceWith( "<div class=\"col-md-1\">DESACTIVE</div>" );
+			if(isManager){
+				$("button.buttonUpdateContact").replaceWith( "<div class=\"col-md-1 col-md-offset-8\"></div>" );				
+			} else {
+				$("button.buttonUpdateParticipationContact").replaceWith( "<div class=\"col-md-1 col-md-offset-8\"></div>" );
+			}
+		}
+		request.post('desactivateContact', d, success, request.errorDefault);
+	}
+	
+	function setIdJe(id){
+		idJe = id;
+		console.log(idJe);
+	}
+	
+	function setIdCompany(id){
+		idCompany = id;
+		console.log(idCompany);
+	}
+	
+	function setManager(manager){
+		isManager = manager;
+		console.log("SETTING MANAGER : " + isManager);
+	}
+
+	return {
+		fillInfo : fillInfo,
+		updateContact : updateContact,
+		setIdJe : setIdJe,
+		setIdCompany : setIdCompany,
+		setManager : setManager,
+		desactivateContact : desactivateContact,
+		updateParticipation : updateParticipation
+	}
+});

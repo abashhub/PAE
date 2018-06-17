@@ -1,0 +1,85 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface is meant to be used by the Servlet to call methods related to a company.
+ *
+ */
+public interface CompanyUCC {
+  /**
+   * Checks if the company is registered in the database. The company DTO should have a name an id
+   * and an adress.
+   * 
+   * @param CompanyDTO a DTO (Data Transfer Object).
+   * @return a CompanyDTO to be used by the servlet.
+   */
+  CompanyDTO register(CompanyDTO companyDTO);
+
+  /**
+   * Ask the DataBase for all the Companies that are invited for the current JE.
+   * 
+   * @param JEDTO a DTO (Data Transfer Object) for the id of the current JE.
+   * @return the list of companies selected by the query.
+   */
+  List<CompanyDTO> getAllCompaniesInvitedForJE(JEDTO je);
+
+  /**
+   * Ask the DataBase for all the Companies that are not invited for the current JE.
+   * 
+   * @param JEDTO a DTO (Data Transfer Object) for the id of the current JE.
+   * @return the list of companies selected by the query.
+   */
+  List<CompanyDTO> getAllCompaniesNotInvitedForJE(JEDTO je);
+
+  /**
+   * Checks if a company with a particular id is in the DB
+   * 
+   * @param CompanyDTO a DTO (Data Transfer Object) used to transfer the id.
+   * @return the CompanyDTO with this id if there is one.
+   */
+  CompanyDTO getCompany(CompanyDTO companyDTO);
+
+  /**
+   * Ask the DataBase for all the Companies that could be invited when a JE is created (must have
+   * paticipated and paid in the last 4 years).
+   * 
+   * @param JEDTO a DTO (Data Transfer Object) for the date of the JE.
+   * @return the list of companies selected by the query.
+   */
+  List<CompanyDTO> getAllCompaniesAviableForJe(JEDTO jeDto);
+
+  /**
+   * Ask the DataBase for all the Companies that have been added since the last JE.
+   * 
+   * @param JEDTO a DTO (Data Transfer Object) for the date of the JE.
+   * @return the list of companies selected by the query.
+   */
+  List<CompanyDTO> getNewCompaniesAviableForJe();
+
+  /**
+   * Insert the participation of a company for the current JE.
+   * 
+   * @param CompanyDTO and JEDTO, DTO (Data Transfer Object) for the id of the Company and JE.
+   * @return the list of companies selected by the query.
+   */
+  boolean inviteCompany(CompanyDTO companyDto, JEDTO jeCourrante);
+
+  CompanyDTO updateCompany(CompanyDTO companyDto);
+
+  List<List<String>> getAllCompaniesInfoByCategory();
+
+  CompanyDTO changeState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  CompanyDTO cancelState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  List<CompanyDTO> searchCompanies(CompanyDTO co);
+
+  List<CompanyDTO> getAllCompaniesToContactForJE(JEDTO je);
+  
+  List<CompanyDTO> getAllCompanies();
+
+}

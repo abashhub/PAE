@@ -1,0 +1,92 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import bizz.ParticipationImpl;
+
+public class ParticipationImplTest {
+
+  private ParticipationImpl part;
+
+  @Before
+  public void setUp() throws Exception {
+    part = new ParticipationImpl("payee", false);
+  }
+
+  @Test
+  public void testCheckParticipation1() {
+    ParticipationImpl part2 = new ParticipationImpl("payee", false);
+    assertTrue(part2.checkParticipation());
+  }
+
+  @Test
+  public void testCheckParticipation2() {
+    ParticipationImpl part2 = new ParticipationImpl("invitee", false);
+    assertTrue(part2.checkParticipation());
+  }
+
+  @Test
+  public void testCheckParticipation3() {
+    ParticipationImpl part2 = new ParticipationImpl("confirmee", false);
+    assertTrue(part2.checkParticipation());
+  }
+
+  @Test
+  public void testCheckParticipation4() {
+    ParticipationImpl part2 = new ParticipationImpl("facturee", false);
+    assertTrue(part2.checkParticipation());
+  }
+
+  @Test
+  public void testCheckParticipation5() {
+    ParticipationImpl part2 = new ParticipationImpl("test", false);
+    assertFalse(part2.checkParticipation());
+  }
+
+  @Test
+  public void testSetState() {
+    part.setState("invitee");
+    assertEquals("invitee", part.getState());
+  }
+
+  @Test
+  public void testGetState() {
+    assertEquals("payee", part.getState());
+  }
+
+  @Test
+  public void testIsCancelled() {
+    assertFalse(part.isCancelled());
+  }
+
+  @Test
+  public void testSetCancelled() {
+    part.setCancelled(true);
+    assertTrue(part.isCancelled());
+  }
+
+  @Test
+  public void testGetStates() {
+    final String[] stat = {"invitee", "confirmee", "facturee", "payee"};
+    assertEquals(stat, part.getStates());
+  }
+
+  @Test
+  public void testGetNumVersion() {
+    assertEquals(0, part.getNumVersion());
+  }
+
+  @Test
+  public void testSetNumVersion() {
+    part.setNumVersion(5);
+    assertEquals(5, part.getNumVersion());
+  }
+
+  @Test
+  public void testToString() {
+    assertEquals("ParticipationImpl [state=payee, cancelled=false, numVersion=0]", part.toString());
+  }
+}

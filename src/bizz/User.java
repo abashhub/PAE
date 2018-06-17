@@ -1,0 +1,51 @@
+package bizz;
+
+import bizz.dto.UserDTO;
+
+/**
+ * This interface is Used by the UserUCC, it declares the complicated methods necessary to manage a
+ * user.
+ */
+public interface User extends UserDTO {
+  // Subject to change. Could also be fetched from a .properties file.
+  int MINIMUM_PASSWORD_LENGTH = 4;
+  int MAXIMUM_PASSWORD_LENGTH = 50;
+  int MINIMUM_USERNAME_LENGTH = 3;
+  int MAXIMUM_USERNAME_LENGTH = 30;
+
+  /**
+   * Computes the hashed password using BCrypt as the hashing algorithm.
+   * 
+   * @return the hashed password.
+   */
+  public String hashedPassword();
+
+  /**
+   * Checks plainPassword against the hashed password stored in the database. The algorithm used for
+   * hashing is BCrypt.
+   * 
+   * <p>A BizzException will be thrown if the passwords don't match.
+   * 
+   * @param plainPassword the password to be checked, coming from the client.
+   */
+  public void checkPassword(String plainPassword);
+
+  /**
+   * Checks if every required attribute for a complete registration is valid, that is, if those
+   * attributes aren't null or empty strings. Emails are validated using regular expressions and
+   * passwords should be at least {@value #MINIMUM_PASSWORD_LENGTH} characters long.
+   * 
+   * <p>This method DOESN'T tell if a login or an email is unique across the database, rather, it
+   * tells whether or not a given login or email can in fact exist in the database. Such a unicity
+   * test should be performed in the User Controller (UserUCC).
+   * 
+   * <p>A BizzException will be thrown if the registration data is invalid.
+   */
+  void checkRegistration();
+
+  /**
+   * Checks if the login and password are specified. A BizzException will be thrown if it's empty or
+   * null.
+   */
+  void checkLogin();
+}

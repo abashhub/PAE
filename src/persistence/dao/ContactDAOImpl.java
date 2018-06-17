@@ -1,0 +1,498 @@
+package persistence.dao;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+import bizz.dto.ParticipationDTO;
+import bizz.factory.CompanyFactory;
+import bizz.factory.ContactFactory;
+import bizz.factory.ParticipationFactory;
+import exception.OptimisticLockException;
+import persistence.DALBackendServices;
+import persistence.DALServices;
+import util.Util;
+
+/**
+ * This class is the implementation of ContactDAO used in production. Since ContactDAO extends DAO,
+ * this implementation contains the basic CRUD as well.
+ */
+public class ContactDAOImpl implements ContactDAO {
+
+  private DALServices dalServices;
+  private ContactFactory contactFactory;
+  private CompanyFactory companyFactory;
+  private ParticipationFactory participationFactory;
+  private DAO<CompanyDTO> companyDAO;
+
+  private static Logger logger = Logger.getLogger(ContactDAOImpl.class);
+  private static final String SQL_INSERT_CONTACT = "INSERT INTO PAE.personnes_contact"
+      + " VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?) returning id_personne_contact";
+  private static final String SQL_SELECT_BY_EMAIL =
+      "SELECT * FROM PAE.personnes_contact pc WHERE pc.email = ?";
+  private static final String SQL_SELECT_BY_ID =
+      "SELECT * FROM PAE.personnes_contact pc WHERE pc.id_personne_contact = ?";
+
+  private static final String SQL_SELECT_ALL_FROM_COMPANY =
+      "SELECT DISTINCT ON (pc.id_personne_contact) * FROM PAE.personnes_contact pc LEFT OUTER JOIN PAE.participations_contacts ppc "
+          + "ON pc.id_personne_contact = ppc.personne_contact WHERE pc.entreprise = ? ;";
+  private static final String SQL_UPDATE_CONTACT =
+      "UPDATE PAE.personnes_contact SET email = ?, telephone = ?, num_version = ?, nom = ?, prenom = ?  "
+          + "WHERE num_version < ? AND id_personne_contact = ? RETURNING id_personne_contact";
+  private static final String SQL_SELECT_ALL_LAST_NAMES =
+      "SELECT DISTINCT p.nom FROM PAE.personnes_contact p";
+  private static final String SQL_SELECT_ALL_FIRST_NAMES =
+      "SELECT DISTINCT p.prenom FROM PAE.personnes_contact p";
+  private static final String SQL_SEARCH_CONTACTS =
+      "SELECT * FROM PAE.personnes_contact WHERE prenom LIKE ? AND nom LIKE ?";
+  private static final String SQL_INSERT_PARTICIPATION =
+      "INSERT INTO PAE.participations_contacts VALUES( ?,?,?,?) "
+          + "returning num_version_participation_contact";
+  private static final String SQL_DELETE_PARTICIPATION = "DELETE FROM PAE.participations_contacts "
+      + "WHERE journee_entreprises = ? AND entreprise = ? AND personne_contact = ? "
+      + "RETURNING personne_contact";
+  private static final String SQL_SELECT_BY_COMPANY =
+      "SELECT * FROM PAE.personnes_contact WHERE entreprise = ? AND est_actif = true";
+  private static final String SQL_DESACTIVATE_CONTACT =
+      "UPDATE PAE.personnes_contact SET est_actif = false, num_version = ? "
+          + "WHERE num_version < ? AND id_personne_contact = ? RETURNING id_personne_contact";
+  private static final String SQL_VIEW_NUMBER_OF_PARTICIPANTS =
+      "SELECT * FROM PAE.nombre_contacts_presents";
+  private static final String SQL_SELECT_PARTICIPATION_CONTACT =
+      "SELECT * FROM PAE.participations_contacts WHERE journee_entreprises = ? AND entreprise = ? AND personne_contact = ?";
+
+  /**
+   * Meant to be called by the main, build the DAO.
+   */
+  public ContactDAOImpl(DALServices dalServices, ContactFactory contactFactory,
+      CompanyFactory companyFactory, DAO<CompanyDTO> companyDAO,
+      ParticipationFactory participationFactory) {
+    super();
+    this.dalServices = dalServices;
+    this.contactFactory = contactFactory;
+    this.companyFactory = companyFactory;
+    this.companyDAO = companyDAO;
+    this.participationFactory = participationFactory;
+  }
+
+  /**
+   * Build the contact.
+   * 
+   * @param rs contains the result set.
+   * @return contact build.
+   * @throws SQLException if an exception occur.
+   */
+  private ContactDTO buildContact(ResultSet rs) throws SQLException {
+    ContactDTO contact = this.contactFactory.createContact();
+    contact.setId(rs.getLong("id_personne_contact"));
+
+    CompanyDTO company = this.companyFactory.createCompany();
+    company.setCompanyId(rs.getLong("entreprise"));
+    company = companyDAO.find(company);
+
+    contact.setCompany(company); // set company
+    contact.setLastName(rs.getString("nom"));
+    contact.setFirstName(rs.getString("prenom"));
+    contact.setEmail(rs.getString("email"));
+    contact.setTelephone(rs.getString("telephone"));
+    contact.setStatus(rs.getBoolean("est_actif"));
+    contact.setNumVersion(rs.getInt("num_version"));
+    return contact;
+  }
+
+  private ParticipationDTO buildParticiptionContact(ResultSet rs) throws SQLException {
+    ParticipationDTO part = participationFactory.create();
+    part.setNumVersion(rs.getInt("num_version_participation_contact"));
+    return part;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public ContactDTO findByEmail(ContactDTO contactDTO) {
+    ContactDTO contact = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_BY_EMAIL);
+      ps.setString(1, contactDTO.getEmail());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        contact = this.buildContact(rs);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return contact;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public Long create(ContactDTO contactDTO) {
+    Long insertedID = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_INSERT_CONTACT);
+      ps.setInt(1, contactDTO.getCompany().getCompanyId().intValue());
+      ps.setString(2, contactDTO.getLastName());
+      ps.setString(3, contactDTO.getFirstName());
+      ps.setString(4, contactDTO.getEmail());
+      ps.setString(5, contactDTO.getTelephone());
+      ps.setBoolean(6, true);
+      ps.setInt(7, 0);
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        insertedID = rs.getLong(1);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return insertedID;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public ContactDTO find(ContactDTO contactDTO) {
+    ContactDTO contact = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_BY_ID);
+      ps.setLong(1, contactDTO.getId());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        contact = this.buildContact(rs);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return contact;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public Long update(ContactDTO contactDTO) {
+    Long idContact = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_UPDATE_CONTACT);
+      ps.setString(1, contactDTO.getEmail());
+      ps.setString(2, contactDTO.getTelephone());
+      ps.setInt(3, contactDTO.getNumVersion() + 1);
+      ps.setString(4, contactDTO.getLastName());
+      ps.setString(5, contactDTO.getFirstName());
+      ps.setInt(6, contactDTO.getNumVersion() + 1);
+      ps.setLong(7, contactDTO.getId());
+      rs = ps.executeQuery();
+      if (rs.next()) {
+        logger.debug("a trouver/a update");
+        idContact = rs.getLong("id_personne_contact");
+      } else {
+        idContact = find(contactDTO).getId();
+        if (idContact != null) {
+          throw new OptimisticLockException(
+              "Erreur, vous ne travaillez pas sur la dernière version de l'objet.");
+        }
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return idContact;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void delete(ContactDTO contactDTO) {
+    // TODO Auto-generated method stub
+
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> fillInfosContacts(CompanyDTO companyDTO, JEDTO jeDto) {
+    List<ContactDTO> liste = new ArrayList<>();
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    ContactDTO contact = null;
+    ParticipationDTO participation = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_ALL_FROM_COMPANY);
+      ps.setLong(1, companyDTO.getCompanyId());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        contact = this.buildContact(rs);
+        participation = getParticipationContact(contact, jeDto);
+        if (participation == null) {
+          participation = this.buildParticiptionContact(rs);
+        }
+        contact.setParticipation(participation);
+        liste.add(contact);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return liste;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<List<String>> getAllContactsInfoByCategory() {
+    List<List<String>> liste = new ArrayList<>();
+    addToList(liste, SQL_SELECT_ALL_LAST_NAMES, "nom");
+    addToList(liste, SQL_SELECT_ALL_FIRST_NAMES, "prenom");
+    return liste;
+  }
+
+  /**
+   * Executes then add to the given list.
+   * 
+   * @param liste to fill.
+   * @param statement to be executed.
+   * @param column to get in the result of the query.
+   * @throws SQLException if an exception occurs.
+   */
+  private void addToList(List<List<String>> liste, String statement, String column) {
+    ArrayList<String> listeTemp = new ArrayList<String>();
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(statement);
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        listeTemp.add(rs.getString(column));
+      }
+      liste.add(listeTemp);
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> searchContacts(ContactDTO c) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    List<ContactDTO> list = new ArrayList<>();
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SEARCH_CONTACTS);
+      ps.setString(1, '%' + c.getFirstName());
+      ps.setString(2, '%' + c.getLastName());
+      rs = ps.executeQuery();
+
+      while (rs.next()) {
+        c = this.buildContact(rs);
+        list.add(c);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return list;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public int insertParticipation(ContactDTO contact, JEDTO jeDto) {
+    int numVersionParticipationContact = 0;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_INSERT_PARTICIPATION);
+      ps.setLong(1, jeDto.getId());
+      ps.setLong(2, contact.getCompany().getCompanyId());
+      ps.setLong(3, contact.getId());
+      ps.setInt(4, 1);
+      rs = ps.executeQuery();
+
+      if (rs.next()) {
+        numVersionParticipationContact = rs.getInt("num_version_participation_contact");
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return numVersionParticipationContact;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public boolean deleteParticipation(ContactDTO contact, JEDTO jeDto) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_DELETE_PARTICIPATION);
+      ps.setLong(1, jeDto.getId());
+      ps.setLong(2, contact.getCompany().getCompanyId());
+      ps.setLong(3, contact.getId());
+      rs = ps.executeQuery();
+
+      if (rs.next()) {
+        rs.close();
+        return true;
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return false;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<ContactDTO> findByCompany(CompanyDTO companyDTO) {
+    List<ContactDTO> contacts = new ArrayList<>();
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_BY_COMPANY);
+      ps.setLong(1, companyDTO.getCompanyId());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        ContactDTO contact = this.buildContact(rs);
+        contacts.add(contact);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return contacts;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public boolean desactivateContact(ContactDTO contact) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_DESACTIVATE_CONTACT);
+      ps.setLong(1, contact.getNumVersion() + 1);
+      ps.setLong(2, contact.getNumVersion() + 1);
+      ps.setLong(3, contact.getId());
+      rs = ps.executeQuery();
+      if (rs.next()) {
+        rs.close();
+        return true;
+      } else {
+        if (find(contact).getId() != null) {
+          throw new OptimisticLockException(
+              "Erreur, vous ne travaillez pas sur la dernière version de l'objet.");
+        }
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return false;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public int countContactsParticipating() {
+    int number = 0;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices)
+          .prepareStatement(SQL_VIEW_NUMBER_OF_PARTICIPANTS);
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        number = rs.getInt(1);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return number;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public ParticipationDTO getParticipationContact(ContactDTO contact, JEDTO jeDto) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    ParticipationDTO participation = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices)
+          .prepareStatement(SQL_SELECT_PARTICIPATION_CONTACT);
+      ps.setLong(1, jeDto.getId());
+      ps.setLong(2, contact.getCompany().getCompanyId());
+      ps.setLong(3, contact.getId());
+      rs = ps.executeQuery();
+
+      if (rs.next()) {
+        participation = this.buildParticiptionContact(rs);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return participation;
+  }
+}

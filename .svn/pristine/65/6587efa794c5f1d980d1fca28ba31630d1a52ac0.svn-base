@@ -1,0 +1,214 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.sql.Date;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.easymock.EasyMock;
+import org.junit.Before;
+import org.junit.Test;
+
+import bizz.dto.JEDTO;
+import bizz.ucc.JEUCCImpl;
+import exception.BizzException;
+import persistence.DALServices;
+import persistence.dao.JEDAO;
+
+public class JEUCCImplTest {
+  private DALServices mockDal;
+  private JEDAO daoJe;
+  private JEUCCImpl uccJe;
+
+  @Before
+  public void setUp() throws Exception {
+    mockDal = EasyMock.createMock(DALServices.class);
+    daoJe = EasyMock.createMock(JEDAO.class);
+    uccJe = new JEUCCImpl(mockDal, daoJe);
+  }
+
+  @Test
+  public void testSelectCurrent() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getCurrentJE()).andReturn(je);
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.FALSE);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(02, 05, 2017));
+    daoJe.cloture(je);
+    EasyMock.replay(daoJe);
+    EasyMock.replay(je);
+    assertEquals(uccJe.selectCurrent(), je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCreateJE1() {
+    List<String> list = new ArrayList<>();
+    list.add("sony");
+    list.add("EA");
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(daoJe.create(je)).andReturn(null);
+    EasyMock.expect(daoJe.addParticipations(list, null)).andReturn(Boolean.TRUE);
+    EasyMock.replay(daoJe);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    uccJe.createJE(je, list);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCreateJE2() {
+    List<String> list = new ArrayList<>();
+    list.add("sony");
+    list.add("EA");
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(daoJe.create(je)).andReturn(1L);
+    EasyMock.expect(daoJe.addParticipations(list, 1L)).andReturn(Boolean.FALSE);
+    EasyMock.replay(daoJe);
+    mockDal.rollback();
+    EasyMock.replay(mockDal);
+    uccJe.createJE(je, list);
+  }
+
+  @Test
+  public void testCreateJE3() {
+    List<String> list = new ArrayList<>();
+    list.add("sony");
+    list.add("EA");
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    mockDal.startTransaction();
+    EasyMock.expect(daoJe.create(je)).andReturn(1L);
+    EasyMock.expect(daoJe.addParticipations(list, 1L)).andReturn(Boolean.TRUE);
+    mockDal.commit();
+    EasyMock.replay(mockDal);
+    je.setId(1L);
+    EasyMock.replay(je);
+    EasyMock.expect(daoJe.find(je)).andReturn(je);
+    EasyMock.replay(daoJe);
+    assertEquals(uccJe.createJE(je, list), je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCreateJE4() {
+    List<String> list = new ArrayList<>();
+    list.add("sony");
+    list.add("EA");
+    uccJe.createJE(null, list);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCreateJE5() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    uccJe.createJE(je, null);
+  }
+
+  @Test
+  public void testCheckDates1() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.checkDates(je)).andReturn(Boolean.TRUE);
+    EasyMock.replay(daoJe);
+    assertTrue(uccJe.checkDates(je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckDates2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.checkDates(je)).andReturn(Boolean.FALSE);
+    EasyMock.replay(daoJe);
+    uccJe.checkDates(je);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckDates3() {
+    uccJe.checkDates(null);
+  }
+
+  @Test
+  public void testSelectAllAcademicYears() {
+    List<String> list = new ArrayList<>();
+    list.add("2016-2017");
+    list.add("2017-2018");
+    EasyMock.expect(daoJe.selectAllAcademicYears()).andReturn(list);
+    EasyMock.replay(daoJe);
+    assertEquals(uccJe.selectAllAcademicYears(), list);
+  }
+
+  @Test
+  public void testSelect1() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getJE(je)).andReturn(je);
+    EasyMock.replay(daoJe);
+    assertEquals(je, uccJe.select(je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testSelect2() {
+    uccJe.select(null);
+  }
+
+  @Test(expected = BizzException.class)
+  public void testSelect3() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getJE(je)).andReturn(null);
+    EasyMock.replay(daoJe);
+    assertNull(uccJe.select(je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCloture1() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getCurrentJE()).andReturn(je);
+    EasyMock.replay(daoJe);
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.TRUE);
+    EasyMock.replay(je);
+    uccJe.cloture();
+  }
+
+  @Test
+  public void testCloture2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getCurrentJE()).andReturn(je);
+    EasyMock.expect(je.isCloturee()).andReturn(Boolean.FALSE);
+    EasyMock.replay(je);
+    daoJe.cloture(je);
+    EasyMock.replay(daoJe);
+    uccJe.cloture();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckDateIsLatest1() {
+    uccJe.checkDateIsLatest(null);
+  }
+
+  @Test
+  public void testCheckDateIsLatest2() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getLastJE()).andReturn(null);
+    EasyMock.replay(daoJe);
+    assertTrue(uccJe.checkDateIsLatest(je));
+  }
+
+  @Test
+  public void testCheckDateIsLatest3() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getLastJE()).andReturn(je);
+    EasyMock.expect(daoJe.getLastJE()).andReturn(je);
+    EasyMock.replay(daoJe);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(2018, 02, 15));
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(2018, 02, 19));
+    EasyMock.replay(je);
+    assertTrue(uccJe.checkDateIsLatest(je));
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckDateIsLatest4() {
+    JEDTO je = EasyMock.createMock(JEDTO.class);
+    EasyMock.expect(daoJe.getLastJE()).andReturn(je);
+    EasyMock.expect(daoJe.getLastJE()).andReturn(je);
+    EasyMock.replay(daoJe);
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(2018, 02, 19));
+    EasyMock.expect(je.getDateJournee()).andReturn(new Date(2018, 02, 15));
+    EasyMock.replay(je);
+    assertTrue(uccJe.checkDateIsLatest(je));
+  }
+}

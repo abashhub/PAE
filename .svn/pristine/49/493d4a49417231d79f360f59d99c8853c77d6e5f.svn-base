@@ -1,0 +1,103 @@
+package persistence.dao;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface extends DAO and adds specific methods related to Entreprise like ....().
+ * 
+ */
+public interface CompanyDAO extends DAO<CompanyDTO> {
+  /**
+   * This method returns the list of companies that has been invited in the given JE.
+   * 
+   * @param je
+   * @return list
+   */
+  public List<CompanyDTO> findAllInvitedInJE(JEDTO je);
+
+  /**
+   * This method returns the list of companies that has not been invited in the given JE.
+   * 
+   * @param je
+   * @return list
+   */
+  public List<CompanyDTO> findAllNotInvitedInJE(JEDTO je);
+
+
+  /**
+   * This method returns the list of companies that meet the criteria to be invited in the new JE.
+   * 
+   * @param je
+   * @return list
+   */
+  public List<CompanyDTO> getAllCompaniesAviableForJe(JEDTO jeDto);
+
+  /**
+   * This method returns the list of companies that have been added since the latest JE to be
+   * invited in the new JE.
+   * 
+   * @param je
+   * @return list
+   */
+  public List<CompanyDTO> getNewCompaniesAviableForJe();
+
+  /**
+   * This method insert the participation for the current JE.
+   * 
+   * @param company
+   * @return List<CompanyDTO>
+   */
+  public boolean inviteCompany(CompanyDTO companyDto, JEDTO jeCourrante);
+
+  /**
+   * This method returns three lists of string in a list which corresponds to each criteria of
+   * research.
+   * 
+   * @return companiesInfos
+   */
+  public List<List<String>> getAllCompaniesInfoByCategory();
+
+  /**
+   * Change the state of participation in the current JE.
+   * 
+   * @param companyDto
+   * @param jeCourante
+   * @return company
+   */
+  public CompanyDTO changeState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  /**
+   * Set the company participation as cancelled.
+   * 
+   * @param companyDto
+   * @param jeCourante
+   * @return company
+   */
+  public CompanyDTO cancelState(CompanyDTO companyDto, JEDTO jeCourante);
+
+  /**
+   * Search all the companies corresponding.
+   * 
+   * @param co
+   * @return list
+   */
+  public List<CompanyDTO> searchCompanies(CompanyDTO co);
+
+  /**
+   * Get all companies that are to be contacted.
+   * 
+   * @param je
+   * @return list
+   */
+  public List<CompanyDTO> getAllToContactForJE(JEDTO je);
+
+  /**
+   * Return all companies.
+   * 
+   * @return list
+   */
+  public List<CompanyDTO> getAllCompanies();
+}

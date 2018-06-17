@@ -1,0 +1,67 @@
+package config;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.Properties;
+
+public class Configuration {
+
+  public static Properties properties;
+  public static final String DEV = "dev";
+  public static final String PROD = "prod";
+  public static final String DEV_PATH = "res/dev.properties";
+  public static final String PROD_PATH = "res/prod.properties";
+
+  /**
+   * Initializes the properties loaded from a file.
+   * 
+   * @param path the path to the .properties file
+   */
+  public static void loadProperties(String path) {
+    Properties prop = new Properties();
+    FileInputStream stream;
+    try {
+      stream = new FileInputStream(path);
+
+      try {
+        prop.load(stream);
+      } catch (FileNotFoundException exc) {
+        System.out.println("Config file doesn't exist : " + path);
+        exc.printStackTrace();
+      } finally {
+        stream.close();
+      }
+    } catch (Exception exc) {
+      exc.printStackTrace();
+    }
+    Configuration.properties = prop;
+  }
+
+  public Class getClassFor(String property) {
+    Class c = null;
+    try {
+      c = Class.forName(Configuration.properties.getProperty(property));
+      // o = c.newInstance();
+    } catch (ClassNotFoundException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return c;
+  }
+
+
+  /**
+   * Loads the config file for either dev or prod environment.
+   * 
+   * @param args the arguments passed to the main.
+   */
+  public void initProperties(String[] args) {
+    String path = Configuration.PROD_PATH;
+    if (args.length == 1 && args[0].equals(Configuration.DEV)) {
+      path = Configuration.DEV_PATH;
+    }
+    loadProperties(path);
+    System.out.println("Config file : " + path);
+  }
+
+}

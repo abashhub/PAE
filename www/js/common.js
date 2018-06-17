@@ -1,0 +1,131 @@
+/**
+ * @param form
+ * @returns a dictionary with the content of the form
+ */
+function formToDict(form) {
+	    var dict = {};
+	    
+	    $(form).find('input[type=number], [type=text], [type=password], [type=email], [type=tel], textarea').each(function(){
+	        dict[$(this).attr('name')] = $(this).val();
+	    });
+	    
+	    $(form).find('input[type=radio]:checked').each(function(){
+	        dict[$(this).attr('name')] = $(this).val();
+	    });
+	    
+	    $(form).find('input[type=checkbox]').each(function(){
+	        dict[$(this).attr('name')] = $(this).is(':checked');
+	    });
+	    
+	    $(form).find('select:not([multiple]) option:selected').each(function(){
+	        dict[$(this).attr('name')] = $(this).val();
+	    });
+	    
+	    $(form).find('select[multiple]').each(function(){
+	            var $tab = [];
+	            $(this).find('option:selected').each(function(){
+	                $tab.push($(this).val());
+	            });
+	            dict[$(this).attr('name')] = $tab;
+	    });
+	    return dict;
+}
+
+function downloadCSV(data, fileName) {
+	var result, ctr, keys, columnDelimiter, lineDelimiter;
+
+    columnDelimiter = ';';
+    lineDelimiter = '\n';
+    result = '';
+    
+    if(data.companiesWithContacts.length > 0){
+    	keys = Object.keys(data.companiesWithContacts[0]);
+              
+        result += keys.join(columnDelimiter);
+        result += lineDelimiter;
+        
+        data.companiesWithContacts.forEach(function(item) {
+            ctr = 0;
+            keys.forEach(function(key) {
+                if (ctr > 0) result += columnDelimiter;
+
+                result += item[key];
+                ctr++;
+            });
+            result += lineDelimiter;
+        });
+    }
+    
+    if(data.companiesWithoutContacts.length > 0){
+    	result += "\n\nEntreprises sans contact active: \n";
+    	keys = Object.keys(data.companiesWithoutContacts[0]);
+    	
+    	data.companiesWithoutContacts.forEach(function(item) {
+            ctr = 0;
+            keys.forEach(function(key) {
+                if (ctr > 0) result += columnDelimiter;
+
+                result += item[key];
+                ctr++;
+            });
+            result += lineDelimiter;
+        });
+    }
+    
+    CSV = result;
+
+    fileName = fileName.replace(/ /g,"_");
+
+    var uri = 'data:text/csv;charset=utf-8,' + escape(CSV);
+
+    var link = document.createElement("a");
+    link.href = uri;
+
+    link.style = "visibility:hidden";
+    link.download = fileName + ".csv";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+var request = new(function () {
+	function post(action, data, success,error){
+		$.ajax({
+			url:'/dispatcher',
+			type:'POST',
+			dataType:'json',
+			data: {
+				 action :action,
+				 payload : JSON.stringify(data)
+			},
+			success:success,
+			error:error
+		});
+	}
+	
+	function successDefault(response){
+		console.log(response);
+		toastr.success(response['message']);
+	}
+	
+	function errorDefaultWithoutToast(jqXHR, serverStatus, errorThrown) {
+		if(jqXHR.status === 401){
+			connection.redirectToLogin();
+		}
+		console.log(jqXHR);
+		
+	}
+	
+	function errorDefault(jqXHR, serverStatus, errorThrown) {
+		errorDefaultWithoutToast(jqXHR, serverStatus, errorThrown);
+		toastr.error(JSON.parse(jqXHR['responseText'])['message']);
+		//toastr.error(jqXHR['responseText']['message']);
+	}
+	return{
+	    post:post,
+	    errorDefault:errorDefault,
+	    successDefault:successDefault,
+	    errorDefaultWithoutToast:errorDefaultWithoutToast
+	}
+});

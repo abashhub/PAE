@@ -1,0 +1,57 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.dto.JEDTO;
+
+/**
+ * This interface is meant to be used by the Servlet to call methods related to a JE.
+ *
+ */
+public interface JEUCC {
+
+  /**
+   * Select the current JE if there is one
+   * 
+   * @return a JEDTO if there is one, null otherwise.
+   */
+  JEDTO selectCurrent();
+
+  /**
+   * Create the JE, the academic year as to be valid, there can't be another JE for this year
+   * 
+   * @param jeDto a DTO
+   * @return the newly registered je (a DTO) if it succeeded, null otherwise.
+   */
+  JEDTO createJE(JEDTO jeDto, List<String> companies);
+
+  /**
+   * Verify the dates for the new JE
+   * 
+   * @param jeDto a DTO
+   * @return true if there is no other JE in the same academic year
+   */
+  boolean checkDates(JEDTO jeDto);
+
+
+  /**
+   * Select all academics years from all JE
+   * 
+   * @return all academic year, null if there is none.
+   */
+  List<String> selectAllAcademicYears();
+
+
+  /**
+   * Select the current JE if there is one
+   * 
+   * @return a JEDTO if there is one, null otherwise.
+   */
+  JEDTO select(JEDTO jeDto);
+
+  void cloture();
+  
+  boolean checkDateIsLatest(JEDTO jeDto);
+
+
+}

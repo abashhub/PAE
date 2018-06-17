@@ -1,0 +1,840 @@
+package ihm;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.servlet.DefaultServlet;
+
+import com.owlike.genson.Genson;
+import com.owlike.genson.GensonBuilder;
+
+import bizz.dto.AddressDTO;
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+import bizz.dto.ParticipationDTO;
+import bizz.dto.UserDTO;
+import bizz.factory.AddressFactory;
+import bizz.factory.CompanyFactory;
+import bizz.factory.ContactFactory;
+import bizz.factory.JEFactory;
+import bizz.factory.ParticipationFactory;
+import bizz.factory.UserFactory;
+import bizz.ucc.CompanyUCC;
+import bizz.ucc.ContactUCC;
+import bizz.ucc.JEUCC;
+import bizz.ucc.UserUCC;
+import config.Configuration;
+import exception.BizzException;
+import exception.FatalException;
+import exception.OptimisticLockException;
+import util.Util;
+
+public class Servlet extends DefaultServlet {
+  private UserUCC userUCC;
+  private UserFactory userFactory;
+  private CompanyFactory companyFactory;
+  private CompanyUCC companyUCC;
+  private JEFactory jeFactory;
+  private JEUCC jeUCC;
+  private ContactUCC contactUCC;
+  private ContactFactory contactFactory;
+  private AddressFactory addressFactory;
+  private ParticipationFactory participationFactory;
+
+
+  private final String JWTSecret = Configuration.properties.getProperty("jwtsecret");
+  private Genson genson;
+
+  public Servlet(UserUCC userUCC, UserFactory userFactory, CompanyUCC companyUCC,
+      CompanyFactory companyFactory, JEFactory jeFactory, JEUCC jeUCC, ContactUCC contactUCC,
+      ContactFactory contactFactory, AddressFactory addressFactory,
+      ParticipationFactory participationFactory) {
+    super();
+    this.userUCC = userUCC;
+    this.userFactory = userFactory;
+    this.companyFactory = companyFactory;
+    this.companyUCC = companyUCC;
+    this.jeFactory = jeFactory;
+    this.jeUCC = jeUCC;
+    this.contactUCC = contactUCC;
+    this.contactFactory = contactFactory;
+    this.addressFactory = addressFactory;
+    this.participationFactory = participationFactory;
+    this.genson = new GensonBuilder().useDateFormat(new SimpleDateFormat("yyyy-MM-dd"))
+        .useIndentation(true).useConstructorWithArguments(true).exclude("password").create();
+  }
+
+  @Override
+  protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+      throws ServletException, IOException {
+    String action = req.getParameter("action");
+    String payload = req.getParameter("payload");
+    System.out.println(
+        "POST on " + req.getRequestURI() + " : action=" + action + " and payload=" + payload);
+    Map<String, Object> decodedPayload = null;
+    if (payload != null) {
+      decodedPayload = this.genson.deserialize(payload, Map.class);
+    }
+
+    try {
+      switch (action) {
+        case "login":
+          login(req, resp, decodedPayload);
+          break;
+        case "register":
+          register(req, resp, decodedPayload);
+          break;
+        case "isLoggedIn":
+          isLoggedIn(req, resp);
+          break;
+        default:
+          if (ServletUtil.isLogged(req) == "user") {
+            user_switch(action, req, resp, decodedPayload);
+          } else {
+
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("status", "error");
+            map.put("message", "Utilisateur non connecté");
+            resp.setStatus(401);
+            ServletUtil.send(resp, genson.serialize(map));
+          }
+          break;
+      }
+    } catch (BizzException exc) {
+      ServletUtil.handleError(resp, exc.getMessage(), BizzException.DEFAULT_HTTP_STATUS_CODE);
+    } catch (OptimisticLockException exc) {
+      ServletUtil.handleError(resp, exc.getMessage(),
+          OptimisticLockException.DEFAULT_HTTP_STATUS_CODE);
+    } catch (FatalException exc) {
+      ServletUtil.handleError(resp, exc.getMessage(), FatalException.DEFAULT_HTTP_STATUS_CODE);
+    } catch (Exception exc) {
+      ServletUtil.handleError(resp, "Erreur inconnue : " + exc.getMessage(),
+          HttpStatus.INTERNAL_SERVER_ERROR_500);
+    }
+  }
+
+  private void user_switch(String action, HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    switch (action) {
+      case "logout":
+        logout(req, resp);
+        break;
+      case "addCompany":
+        addCompany(req, resp, decodedPayload);
+        break;
+      case "updateData":
+        updateData(req, resp);
+        break;
+      case "addContact":
+        addContact(req, resp, decodedPayload);
+        break;
+      case "createJE":
+        createJE(req, resp, decodedPayload);
+        break;
+      case "inviteCompany":
+        inviteCompany(req, resp, decodedPayload);
+        break;
+      case "getAllCompaniesForContact":
+        getAllCompaniesForContact(req, resp, decodedPayload);
+        break;
+      case "fillTable":
+        fillTable(req, resp, decodedPayload);
+        break;
+      case "fillInfoCompany":
+        fillInfoCompany(req, resp, decodedPayload);
+        break;
+      case "fillInfoContacts":
+        fillInfoContacts(req, resp, decodedPayload);
+        break;
+      case "updateInfoCompany":
+        updateCompany(req, resp, decodedPayload);
+        break;
+      case "updateInfoContact":
+        updateContact(req, resp, decodedPayload);
+        break;
+      case "fillSearch":
+        fillSearch(req, resp);
+        break;
+      case "getJE":
+        getJE(req, resp, decodedPayload);
+        break;
+      case "searchCompanies":
+        searchCompanies(req, resp, decodedPayload);
+        break;
+      case "changeState":
+        changeState(req, resp, decodedPayload);
+        break;
+      case "cancelParticipation":
+        cancelParticipation(req, resp, decodedPayload);
+        break;
+      case "desactivateContact":
+        desactivateContact(req, resp, decodedPayload);
+        break;
+      case "searchContacts":
+        searchContacts(req, resp, decodedPayload);
+        break;
+      case "cloture":
+        cloture(req, resp);
+        break;
+
+      default:
+        if (isAdmin(req)) {
+          admin_switch(action, req, resp, decodedPayload);
+        }
+        break;
+    }
+  }
+
+  private void admin_switch(String action, HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    switch (action) {
+      case "genCSV_all":
+        allCompaniesToContactCSV(resp);
+        break;
+      case "genCSV_new":
+        newCompaniesToContactCSV(resp);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Gets the list of the new companies that are to be contacted.
+   */
+  private void newCompaniesToContactCSV(HttpServletResponse resp) throws IOException {
+    List<Long> liste = new ArrayList<Long>();
+    BufferedReader br = new BufferedReader(
+        new InputStreamReader(new FileInputStream("res/companiesToContact.txt"), "UTF-8"));
+    String currentLine;
+
+    while ((currentLine = br.readLine()) != null) {
+      Long id = Long.decode(currentLine);
+      if (!liste.contains(id)) {
+        liste.add(id);
+      }
+    }
+    br.close();
+
+    List<CompanyDTO> companies = new ArrayList<CompanyDTO>();
+    for (Long id : liste) {
+      CompanyDTO company = companyFactory.createCompany();
+      company.setCompanyId(id);
+      companies.add(companyUCC.getCompany(company));
+    }
+    companiesToContact(resp, companies, "Aucune nouvelle entreprise n'a été invitée");
+    // reset companiesToContact.txt
+    Files.newBufferedWriter(Paths.get("res/companiesToContact.txt"),
+        StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  /**
+   * Gets the list of the new companies that are to be contacted.
+   */
+  private void allCompaniesToContactCSV(HttpServletResponse resp) throws IOException {
+    JEDTO je = this.jeUCC.selectCurrent();
+    List<CompanyDTO> companiesInvited = this.companyUCC.getAllCompaniesToContactForJE(je);
+    companiesToContact(resp, companiesInvited, "Aucune entreprise n'a encore été invitée");
+  }
+
+  /**
+   * Sends a list of companies that are to be contacted to the front-end from which a CSV will be
+   * generated.
+   */
+  private void companiesToContact(HttpServletResponse resp, List<CompanyDTO> companies,
+      String errorMessage) throws IOException {
+    List<Map> dataCompanies = new ArrayList<Map>();
+    List<Map> dataCompaniesNoContacts = new ArrayList<Map>();
+    Map<String, Object> map = null;
+
+    if (!companies.isEmpty()) {
+      for (CompanyDTO company : companies) {
+        List<ContactDTO> contacts = this.contactUCC.getContactByCompany(company);
+        if (!contacts.isEmpty()) {
+          for (ContactDTO contact : contacts) {
+            map = new LinkedHashMap<String, Object>() {
+              {
+                put("Entreprise", company.getName());
+                put("Contact", contact.getFirstName() + " " + contact.getLastName());
+                put("Email", contact.getEmail());
+                put("Telephone", contact.getTelephone());
+              }
+            };
+            dataCompanies.add(map);
+          }
+        } else {
+          map = new LinkedHashMap<String, Object>() {
+            {
+              put("Entreprise", company.getName());
+            }
+          };
+          dataCompaniesNoContacts.add(map);
+        }
+      }
+      Map<String, Object> data = new HashMap<>();
+      data.put("companiesWithContacts", dataCompanies);
+      data.put("companiesWithoutContacts", dataCompaniesNoContacts);
+      String json = genson.serialize(data);
+      System.out.println(json.toString()); // del later
+      resp.setStatus(200);
+      ServletUtil.send(resp, json);
+    } else {
+      ServletUtil.toFrontEnd(resp, false, null, errorMessage, 400);
+    }
+  }
+
+  private void searchContacts(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    ContactDTO c = contactFactory.createContact();
+    c.setFirstName((String) decodedPayload.get("first_name"));
+    c.setLastName((String) decodedPayload.get("last_name"));
+    List<ContactDTO> result = this.contactUCC.searchContacts(c);
+    ServletUtil.toFrontEnd(resp, "recherche réussie", "contacts", result);
+  }
+
+  private void searchCompanies(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    CompanyDTO co = companyFactory.createCompany();
+    String name = (String) decodedPayload.get("name");
+    String street = (String) decodedPayload.get("street");
+    String locality = (String) decodedPayload.get("municipality");
+    AddressDTO adr = addressFactory.createAdress();
+    if (!((String) decodedPayload.get("postal_code")).equals("")) {
+      Long postCode =
+          Util.getLong(decodedPayload, "postal_code", "Le code postal n'est pas un nombre");
+      adr.setPostCode(postCode);
+    }
+
+    adr.setLocality(locality);
+
+    adr.setStreet(street);
+    co.setName(name);
+    co.setAdresseFacturation(adr);
+    List<CompanyDTO> result = this.companyUCC.searchCompanies(co);
+    ServletUtil.toFrontEnd(resp, "recherche réussie ", "companies", result);
+  }
+
+  private void getJE(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+    JEDTO je = jeFactory.createJE();
+    String academicYear = (String) decodedPayload.get("year");
+    je.setAnneeAcademique(academicYear);
+    je = jeUCC.select(je);
+    Map<String, Object> map = new HashMap<String, Object>();
+    if (je != null) {
+      map.put("je", je);
+      map.put("dateInvitation", format.format(je.getDateInvitations()));
+      map.put("dateJE", format.format(je.getDateJournee()));
+      map.put("companies", this.companyUCC.getAllCompaniesInvitedForJE(je));
+    }
+    ServletUtil.toFrontEnd(resp, "JE trouvée", map);
+  }
+
+  private void fillSearch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    List<String> academicYears = jeUCC.selectAllAcademicYears();
+    Map<String, Object> map = new HashMap<String, Object>();
+    List<List<String>> companiesInfos = companyUCC.getAllCompaniesInfoByCategory();
+    List<List<String>> contactsInfos = contactUCC.getAllContactsInfoByCategory();
+    map.put("academicYears", academicYears);
+    map.put("companiesNames", companiesInfos.get(0));
+    map.put("companiesStreets", companiesInfos.get(3));
+    map.put("companiesPostalCode", companiesInfos.get(1));
+    map.put("companiesMunicipalities", companiesInfos.get(2));
+    map.put("lastNames", contactsInfos.get(0));
+    map.put("firstNames", contactsInfos.get(1));
+    ServletUtil.toFrontEnd(resp, "Informations chargées", map);
+  }
+
+
+  /**
+   * Updates all the data on the front end.
+   */
+  private void updateData(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+    JEDTO je = this.jeUCC.selectCurrent();
+    // dans le cas où 0 je sont enregistrées, on redirige vers la création de je
+    if (je == null) {
+      ServletUtil.toFrontEnd(resp, "Pas de JE dans la base de donnée", "user",
+          req.getSession().getAttribute("id"));
+      return;
+    }
+
+    List<CompanyDTO> companyInvited = this.companyUCC.getAllCompaniesInvitedForJE(je);
+    List<CompanyDTO> companyNotInvited = this.companyUCC.getAllCompaniesNotInvitedForJE(je);
+    int contactParticipating = this.contactUCC.countContactsParticipating();
+    Map<String, Object> map = new HashMap<>();
+    map.put("JE", je);
+    map.put("companiesNotInvited", companyNotInvited);
+    map.put("companiesInvited", companyInvited);
+    map.put("contactsParticipating", contactParticipating);
+    map.put("dateInvitation", format.format(je.getDateInvitations()));
+    map.put("dateJE", format.format(je.getDateJournee()));
+    map.put("user", req.getSession().getAttribute("id"));
+    ServletUtil.toFrontEnd(resp, "Informations misent à jour", map);
+
+  }
+
+  /**
+   * Adds a user to the database.
+   */
+  private void register(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    String lastName = (String) decodedPayload.get("lastName");
+    String firstName = (String) decodedPayload.get("firstName");
+    String email = (String) decodedPayload.get("email");
+    String login = (String) decodedPayload.get("login");
+    String password = (String) decodedPayload.get("password");
+    UserDTO user = userFactory.createUser();
+    user.setLastName(lastName);
+    user.setFirstName(firstName);
+    user.setEmail(email);
+    user.setLogin(login);
+    user.setPassword(password);
+
+    Map<String, Object> map = new HashMap<String, Object>();
+
+    UserDTO userFinal = userUCC.register(user);
+    if (userFinal != null) {
+      ServletUtil.updateSession(req, resp, userFinal); // Logs user in
+      map.put("status", "success");
+      map.put("user", userFinal);
+      resp.setStatus(200);
+    } else {
+      map.put("status", "error");
+      map.put("message", "Database error"); // TODO message should contain
+                                            // Exception.getMessage()
+      resp.setStatus(400);
+    }
+    String json = genson.serialize(map);
+    ServletUtil.send(resp, json);
+  }
+
+  /**
+   * Checks login credentials to grant access to the dashboard .
+   */
+  private void login(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    String login = (String) decodedPayload.getOrDefault("login", "");
+    String password = (String) decodedPayload.getOrDefault("password", "");
+    UserDTO user = userFactory.createUser(login, password);
+
+    UserDTO userFinal = userUCC.login(user);
+    if (userFinal != null) {
+      ServletUtil.updateSession(req, resp, userFinal);
+    }
+    ServletUtil.toFrontEnd(resp, "Connecté", "user", userFinal);
+  }
+
+  /**
+   * Checks if the user is logged in.
+   */
+  private void isLoggedIn(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    Map<String, Object> map = new HashMap<String, Object>();
+    boolean logged;
+    if (ServletUtil.isLogged(req) == "user") {
+      if (isAdmin(req)) {
+        map.put("loggedAs", "manager");
+      } else {
+        map.put("loggedAs", "user");
+      }
+      logged = true;
+    } else {
+      map.put("loggedAs", "not logged");
+      logged = false;
+    }
+    ServletUtil.toFrontEnd(resp, logged, "Connecté", "Pas connecté", map, 401);
+  }
+
+  /**
+   * Checks if the user is admin.
+   */
+  private boolean isAdmin(HttpServletRequest req) {
+    Object login = req.getSession().getAttribute("id");
+    UserDTO userDto = userFactory.createUser();
+    userDto.setLogin((String) login);
+    UserDTO user = userUCC.getUserByLogin(userDto);
+    return user.isManager();
+  }
+
+  /**
+   * Disconnects the user by deleting the session and cookie
+   */
+  private void logout(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    System.out.println("Logging out");
+    Cookie[] cookies = req.getCookies();
+
+    if (cookies != null) {
+      for (Cookie c : cookies) {
+        if (c.getName().equals("user")) {
+          c.setValue("");
+          c.setPath("/");
+          c.setMaxAge(0);
+          resp.addCookie(c);
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    Enumeration<String> attributes = req.getSession().getAttributeNames();
+    System.out.println("Deleting session");
+    while (attributes.hasMoreElements()) {
+      System.out.println("Attribute : " + attributes.nextElement());
+    }
+    // -------------------------------------------------------------------------
+
+    req.getSession().invalidate();
+    System.out.println("Session deleted");
+    ServletUtil.toFrontEnd(resp, "Déconnecté avec succès");
+  }
+
+  /**
+   * Adds a company to the database.
+   */
+  private void addCompany(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    String name = (String) decodedPayload.get("name");
+    String street = (String) decodedPayload.get("street");
+    String number = (String) decodedPayload.get("number");
+    String box = (String) decodedPayload.get("box");
+    Long postCode = (Long) decodedPayload.get("postCode");
+    String locality = (String) decodedPayload.get("locality");
+
+    AddressDTO address = addressFactory.createAdress();
+    address.setBox(box);
+    address.setLocality(locality);
+    address.setPostCode(postCode);
+    address.setStreet(street);
+    address.setNumber(number);
+
+    // ajouter le user créateur dans l'entreprise !!!
+    UserDTO user = userFactory.createUser();
+    user.setLogin((String) req.getSession().getAttribute("id"));
+
+    CompanyDTO company = companyFactory.createCompany();
+    company.setAdresseFacturation(address);
+    company.setName(name);
+    company.setCreater(user);
+
+    CompanyDTO companyFinal = companyUCC.register(company);
+    ServletUtil.toFrontEnd(resp, "Entreprise ajoutée avec succès", "company", companyFinal);
+  }
+
+  /**
+   * Adds a contact to the database.
+   */
+  private void addContact(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    Map<String, Object> map = new HashMap<String, Object>();
+    Long companyId;
+    try {
+      companyId = (Long) decodedPayload.get("companyId");
+    } catch (Exception exc) {
+      companyId = null; // ContactImpl.checkContact() renvoie faux si companyId == null
+    }
+    String lastName = (String) decodedPayload.get("lastName");
+    String firstName = (String) decodedPayload.get("firstName");
+    String email = (String) decodedPayload.get("email");
+    String telephone = (String) decodedPayload.get("telephone");
+
+    CompanyDTO company = companyFactory.createCompany();
+    company.setCompanyId(companyId);
+    company = companyUCC.getCompany(company);
+
+    if (company != null) {
+      ContactDTO contact = contactFactory.createContact();
+      contact.setCompany(company);
+      contact.setLastName(lastName);
+      contact.setFirstName(firstName);
+      contact.setEmail(email);
+      contact.setTelephone(telephone);
+
+      ContactDTO contactFinal = contactUCC.addContact(contact);
+      if (contactFinal != null) {
+        map.put("status", "success");
+        map.put("message", "Contact ajouté");
+        map.put("contact", contactFinal);
+        resp.setStatus(200);
+      } else {
+        map.put("status", "error");
+        map.put("message", "Contact déjà dans la base de données ou contact invalide"); // TODO
+                                                                                        // message
+                                                                                        // should
+        // contain
+        // BizzException.getMessage()
+        resp.setStatus(400);
+        System.out.println("Contact déjà dans la base de données ou contact invalide");
+      }
+    } else {
+      map.put("status", "error");
+      map.put("message", "Entreprise pas dans la base de données"); // TODO message should contain
+      // BizzException.getMessage()
+      resp.setStatus(400);
+      System.out.println("Entreprise pas dans la base de données");
+    }
+    String json = genson.serialize(map);
+    ServletUtil.send(resp, json);
+  }
+
+  /**
+   * Creates a new JE to the database.
+   */
+  private void createJE(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    String date = (String) decodedPayload.get("date");
+    String anneeAcademique = (String) decodedPayload.get("anneeAcademique");
+    // recoit quoi ? deja DTO ou construire DTO
+    List<String> companies = (List<String>) decodedPayload.get("liste_id");
+    System.out.println(companies);
+    System.out.println(anneeAcademique);
+
+    Date dateJe = Util.createDate(date);
+    Date dateInvit = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+    // comment savoir l'année académqie ?
+
+    JEDTO jeDto = jeFactory.createJE();
+    jeDto.setDateInvitations(dateInvit);
+    jeDto.setDateJournee(dateJe);
+    jeDto.setAnneeAcademique(anneeAcademique);
+
+    JEDTO jeFinal = null;
+    jeUCC.checkDates(jeDto);
+    jeFinal = jeUCC.createJE(jeDto, companies);
+
+
+    ServletUtil.toFrontEnd(resp, "JE créée avec succès", "JE", jeFinal);
+  }
+
+  private void fillTable(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    Map<String, Object> map = new HashMap<String, Object>();
+    String date = (String) decodedPayload.get("date");
+    String anneeAcademique = (String) decodedPayload.get("anneeAcademique");
+    System.out.println(anneeAcademique);
+    System.out.println(date);
+    Date dateJe = Util.createDate(date);
+    Date now = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+    // check if datJe is valid, if so then keep going
+    if (!dateJe.after(now)) {
+      throw new BizzException("Erreur, la date choisie dépassée.");
+    }
+
+    JEDTO jeDto = jeFactory.createJE();
+    jeDto.setAnneeAcademique(anneeAcademique);
+    jeDto.setDateJournee(dateJe);
+    jeDto.setDateInvitations(now);
+
+    if (!jeUCC.checkDates(jeDto)) {
+      throw new BizzException("Erreur, une JE est déjà existante lors de cette année académique.");
+    }
+    jeUCC.checkDateIsLatest(jeDto);
+    List<CompanyDTO> listEntreprises = companyUCC.getAllCompaniesAviableForJe(jeDto);
+    System.out.println("entrepries invitée " + listEntreprises);
+    List<CompanyDTO> listNewEntreprises = companyUCC.getNewCompaniesAviableForJe();
+    map.put("status", "success");
+    map.put("newEntreprise", listNewEntreprises);
+    map.put("entreprisesInvitee", listEntreprises);
+    resp.setStatus(200);
+    System.out.println("JE Valide");
+    String json = genson.serialize(map);
+    ServletUtil.send(resp, json);
+  }
+
+  /**
+   * Invites a company to the current JE (changes the state of the company in the database to
+   * 'invitee').
+   */
+  private void inviteCompany(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    Long id = Util.getLong(decodedPayload, "id", "Pas d'entreprise sélectionnée.");
+    CompanyDTO companyDto = companyFactory.createCompany();
+    System.out.println(id);
+    companyDto.setCompanyId(id);
+
+    JEDTO je_courrante = null;
+    if (((je_courrante = jeUCC.selectCurrent()) != null
+        && companyUCC.inviteCompany(companyDto, je_courrante))) {
+
+      // append file companiesToContact.txt
+      Files.write(Paths.get("res/companiesToContact.txt"),
+          ((String) decodedPayload.get("id") + "\n").getBytes("UTF-8"), StandardOpenOption.APPEND);
+    }
+    ServletUtil.toFrontEnd(resp, "L'entreprise a été correctement invitée à la JE");
+  }
+
+  /**
+   * fetches all the data of a company by its id from the database and sends it to the front-end.
+   */
+  private void fillInfoCompany(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    Long id = Util.getLong(decodedPayload, "companyId", "company id invalide");
+    CompanyDTO company = companyFactory.createCompany();
+    System.out.println(id);
+    company.setCompanyId(id);
+
+    company = companyUCC.getCompany(company);
+    ServletUtil.toFrontEnd(resp, "Information trouvées avec succès", "company", company);
+
+  }
+
+  /**
+   * fetches all the data of a contact by its id from the database and sends it to the front-end.
+   */
+  private void fillInfoContacts(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    Long id = Util.getLong(decodedPayload, "companyId", "Impossible de délectioner le contact.");
+    CompanyDTO companyDto = companyFactory.createCompany();
+    System.out.println(id);
+    companyDto.setCompanyId(id);
+
+    List<ContactDTO> liste = contactUCC.fillInfosContacts(companyDto);
+    ServletUtil.toFrontEnd(resp, "Contact trouvé", "allContacts", liste);
+  }
+
+  /**
+   * Updates the data of a company in the database.
+   */
+  private void updateCompany(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    CompanyDTO companyDto = companyFactory.createCompany();
+    Long companyId = Util.getLong(decodedPayload, "id", "Impossible de sélectioner l'entreprise.");
+    companyDto.setCompanyId(companyId);
+    companyDto.setName((String) decodedPayload.get("nom"));
+    companyDto.setNumVersion(((Long) decodedPayload.get("version")).intValue());
+    // address
+    String street = (String) decodedPayload.get("rue");
+    System.out.println(street);
+    String number = (String) decodedPayload.get("num");
+    String box = (String) decodedPayload.get("boite");
+    Long postCode = Util.getLong(decodedPayload, "codePostal", "Code postal inccorect.");
+    System.out.println("code postal : " + postCode);
+    String locality = (String) decodedPayload.get("commune");
+
+    AddressDTO address = addressFactory.createAdress();
+    address.setBox(box);
+    address.setLocality(locality);
+    address.setNumber(number);
+    address.setPostCode(postCode);
+    address.setStreet(street);
+    companyDto.setAdresseFacturation(address);
+
+    CompanyDTO company = companyUCC.updateCompany(companyDto);
+    ServletUtil.toFrontEnd(resp, "Informations modifées", "company", company);
+  }
+
+  /**
+   * Updates the data of a contact in the database.
+   */
+  private void updateContact(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+
+    JEDTO jeCurrent = jeFactory.createJE();
+    jeCurrent.setId((Long) decodedPayload.get("idJe"));
+
+    CompanyDTO companyDto = companyFactory.createCompany();
+    companyDto.setCompanyId(Util.getLong(decodedPayload, "idCompany", "id company invalide"));
+
+    ContactDTO contact = contactFactory.createContact();
+    contact.setEmail((String) decodedPayload.get("email"));
+    contact.setTelephone((String) decodedPayload.get("tel"));
+    contact.setId(Util.getLong(decodedPayload, "id", "id invalide"));
+    contact.setNumVersion(((Long) decodedPayload.get("version")).intValue());
+
+    ParticipationDTO part = participationFactory.create();
+    part.setNumVersion(((Long) decodedPayload.get("versionParticipation")).intValue());
+
+    contact.setParticipation(part);
+    contact.setCompany(companyDto);
+    contactUCC.updateContact(contact, jeCurrent);
+    ServletUtil.toFrontEnd(resp, "Contact modifié");
+  }
+
+  /**
+   * Updates the state of a company in the database.
+   */
+  private void changeState(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    CompanyDTO company = companyFactory.createCompany();
+    ParticipationDTO participation = participationFactory.create();
+    participation.setState((String) decodedPayload.get("state"));
+    participation.setNumVersion(((Long) decodedPayload.get("version")).intValue());
+    List<ParticipationDTO> participations = new ArrayList<>();
+    participations.add(participation);
+    company.setCompanyId(Long.decode((String) decodedPayload.get("idCompany")));
+    company.setParticipations(participations);
+    JEDTO jeCourante = jeFactory.createJE();
+    jeCourante.setId(((Long) decodedPayload.get("idJe")));
+
+    company = companyUCC.changeState(company, jeCourante);
+    ServletUtil.toFrontEnd(resp, "État mis à jour avec succès");
+  }
+
+  /**
+   * Cancels the participation of a company.
+   */
+  private void cancelParticipation(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    CompanyDTO company = companyFactory.createCompany();
+    ParticipationDTO participation = participationFactory.create();
+    participation.setNumVersion(((Long) decodedPayload.get("version")).intValue());
+    List<ParticipationDTO> participations = new ArrayList<>();
+    participations.add(participation);
+    company.setCompanyId(Long.decode((String) decodedPayload.get("idCompany")));
+    company.setParticipations(participations);
+    JEDTO jeCourante = jeFactory.createJE();
+    jeCourante.setId(((Long) decodedPayload.get("idJe")));
+
+    company = companyUCC.cancelState(company, jeCourante);
+    ServletUtil.toFrontEnd(resp, "État mis à jour avec succès");
+  }
+
+  /**
+   * Closes the current JE.
+   */
+  private void cloture(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    jeUCC.cloture();
+    ServletUtil.toFrontEnd(resp, "JE cloturée");
+  }
+
+  /**
+   * Deactivates a contact.
+   */
+  private void desactivateContact(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    ContactDTO contact = contactFactory.createContact();
+    contact.setId(Long.decode((String) decodedPayload.get("id")));
+    contact.setNumVersion(((Long) decodedPayload.get("version")).intValue());
+    contactUCC.desactivateContact(contact);
+    ServletUtil.toFrontEnd(resp, "Contact désactvé");
+  }
+
+  private void getAllCompaniesForContact(HttpServletRequest req, HttpServletResponse resp,
+      Map<String, Object> decodedPayload) throws IOException {
+    List<CompanyDTO> companies = null;
+    companies = companyUCC.getAllCompanies();
+    ServletUtil.toFrontEnd(resp, "Entreprises trouvées", "companies", companies);
+  }
+}

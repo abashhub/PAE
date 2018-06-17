@@ -1,0 +1,28 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.ContactDTO;
+import bizz.dto.JEDTO;
+
+/**
+ * This interface is meant to be used by the Servlet to call methods related to a contact.
+ *
+ */
+public interface ContactUCC {
+
+  ContactDTO addContact(ContactDTO contactDTO);
+
+  List<ContactDTO> fillInfosContacts(CompanyDTO companyDTO);
+
+  boolean updateContact(ContactDTO contactDTO, JEDTO jeCurrent);
+
+  List<List<String>> getAllContactsInfoByCategory();
+
+  List<ContactDTO> searchContacts(ContactDTO c);
+
+  List<ContactDTO> getContactByCompany(CompanyDTO companyDTO);
+
+  void desactivateContact(ContactDTO contact);
+}

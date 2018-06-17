@@ -1,0 +1,280 @@
+package persistence.dao;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.log4j.Logger;
+
+import bizz.dto.JEDTO;
+import bizz.factory.JEFactory;
+import persistence.DALBackendServices;
+import persistence.DALServices;
+import util.Util;
+
+/**
+ * This class is the implementation of JEDAO used in production. Since JEDAO extends DAO, this
+ * implementation contains the basic CRUD as well.
+ */
+public class JEDAOImpl implements JEDAO {
+
+  private DALServices dalServices;
+  private JEFactory jeFactory;
+
+  private static Logger logger = Logger.getLogger(JEDAOImpl.class);
+  private static final String SQL_SELECT_LAST_JE =
+      "SELECT je.* " + "FROM PAE.journees_entreprises je WHERE je.id_journee_entreprises >= "
+          + "(select max( je.id_journee_entreprises) FROM PAE.journees_entreprises je)";
+
+  private static final String SQL_INSERT_JE = "INSERT INTO PAE.journees_entreprises "
+      + "VALUES (DEFAULT, ?, ?, ?) RETURNING id_journee_entreprises";
+
+  private static final String SQL_SELECT_ANNEE_ACADEMIQUE =
+      "SELECT * FROM PAE.journees_entreprises j WHERE j.annee_academique = ?";
+
+  private static final String SQL_SELECT_BY_ID =
+      "SELECT * FROM PAE.journees_entreprises j WHERE j.id_journee_entreprises = ?";
+
+  private static final String SQL_INSERT_PARTICIPATIONS =
+      "INSERT INTO PAE.participations_entreprises VALUES (?, ?, ?, ?, false) "
+          + "RETURNING journee_entreprises";
+
+  private static final String SQL_SELECT_ALL_ANNEE_ACADEMIQUE =
+      "SELECT j.annee_academique FROM PAE.journees_entreprises j";
+
+  private static final String SQL_CLORE_JE = "UPDATE PAE.journees_entreprises SET cloturee = true";
+
+  private static final String SQL_SELECT_DATE_LAST_JE =
+      "SELECT * FROM PAE.journees_entreprises je1 WHERE je1.id_journee_entreprises > "
+          + "ALL(SELECT je2.id_journee_entreprises FROM PAE.journees_entreprises je2) ";
+
+  /**
+   * Meant to be called by the main. Constructs the JEDAO.
+   */
+  public JEDAOImpl(DALServices dalServices, JEFactory jeFactory) {
+    this.jeFactory = jeFactory;
+    this.dalServices = dalServices;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public JEDTO find(JEDTO jeDto) {
+    JEDTO je = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_BY_ID);
+      ps.setLong(1, jeDto.getId());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        je = this.buildJE(rs);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return je;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public Long create(JEDTO jeDto) {
+    // this.cloture(getCurrentJE());
+    Long insertedID = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      cloture(getCurrentJE());
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_INSERT_JE);
+      ps.setString(1, jeDto.getAnneeAcademique());
+      ps.setDate(2, new java.sql.Date(jeDto.getDateJournee().getTime()));
+      ps.setDate(3, new java.sql.Date(jeDto.getDateInvitations().getTime()));
+
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        insertedID = rs.getLong(1);
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return insertedID;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public Long update(JEDTO obj) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void delete(JEDTO obj) {
+    // TODO Auto-generated method stub
+
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  private JEDTO buildJE(ResultSet rs) throws SQLException {
+    JEDTO je = this.jeFactory.createJE();
+    je.setAnneeAcademique(rs.getString("annee_academique"));
+    je.setId(rs.getLong("id_journee_entreprises"));
+    je.setDateInvitations(rs.getTimestamp("date_invitations"));
+    je.setDateJournee(rs.getTimestamp("date_journee"));
+    je.setCloturee(rs.getBoolean("cloturee"));
+    return je;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  public boolean checkDates(JEDTO jeDto) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_ANNEE_ACADEMIQUE);
+      ps.setString(1, jeDto.getAnneeAcademique());
+      rs = ps.executeQuery();
+      if (rs.next()) {
+        rs.close();
+        return false;
+      }
+      rs.close();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+
+    return true;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public boolean addParticipations(List<String> companies, Long id_JE) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_INSERT_PARTICIPATIONS);
+      for (int i = 0; i < companies.size(); i++) {
+        ps.setLong(1, id_JE);
+        ps.setInt(2, Integer.parseInt(companies.get(i)));
+        ps.setString(3, "invitee");
+        ps.setInt(4, 0);
+        rs = ps.executeQuery();
+        if (!rs.next()) {
+          return false;
+        }
+        rs.close();
+      }
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return true;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public JEDTO getCurrentJE() {
+    JEDTO je = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_LAST_JE);
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        je = this.buildJE(rs);
+      }
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return je;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public JEDTO getJE(JEDTO jeDto) {
+    JEDTO je = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_SELECT_ANNEE_ACADEMIQUE);
+      ps.setString(1, jeDto.getAnneeAcademique());
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        je = this.buildJE(rs);
+      }
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return je;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public List<String> selectAllAcademicYears() {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    List<String> list = new ArrayList<>();
+    try {
+      ps = ((DALBackendServices) this.dalServices)
+          .prepareStatement(SQL_SELECT_ALL_ANNEE_ACADEMIQUE);
+      rs = ps.executeQuery();
+      while (rs.next()) {
+        list.add(rs.getString("annee_academique"));
+      }
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(rs, ps);
+    }
+    return list;
+  }
+
+  /**
+   * {@inheritDoc}.
+   */
+  @Override
+  public void cloture(JEDTO selectCurrent) {
+    PreparedStatement ps = null;
+    try {
+      ps = ((DALBackendServices) this.dalServices).prepareStatement(SQL_CLORE_JE);
+      ps.execute();
+    } catch (SQLException exc) {
+      logger.error("Unexpected error", exc);
+    } finally {
+      Util.closeQuietly(ps);
+    }
+  }
+}

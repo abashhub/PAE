@@ -1,0 +1,240 @@
+package bizz.ucc;
+
+import java.util.List;
+
+import bizz.Company;
+import bizz.Participation;
+import bizz.dto.CompanyDTO;
+import bizz.dto.JEDTO;
+import exception.BizzException;
+import persistence.DALServices;
+import persistence.dao.CompanyDAO;
+import persistence.dao.DAO;
+import util.Util;
+
+/**
+ * This class is the implementation of EntrepriseUCC, this implementation is meant to be used in
+ * production.
+ *
+ */
+public class CompanyUCCImpl implements CompanyUCC {
+  DALServices dalServices;
+  DAO<CompanyDTO> companyDAO;
+
+  /**
+   * Class constructor.
+   * 
+   * @param dalServices The interface used to operate the database. Typically used to start
+   *        transactions and commit modifications.
+   * @param CompanyDAO The company DAO (Data Access Object) used to perform operations on the
+   *        database regarding companies.
+   */
+  public CompanyUCCImpl(DALServices dalServices, DAO<CompanyDTO> companyDAO) {
+    this.dalServices = dalServices;
+    this.companyDAO = companyDAO;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public CompanyDTO register(CompanyDTO companyDTO) {
+    CompanyDTO companyReturn = null;
+    // check if valid fields
+    if (!((Company) companyDTO).checkRegistration()) {
+      throw new BizzException("Erreur, entreprise incomplète.");
+    }
+
+    // Everything is ok, create the Company
+    dalServices.startTransaction();
+    Long companyId = companyDAO.create(companyDTO);
+    if (companyId == null) {
+      dalServices.rollback();
+      throw new BizzException("Erreur, l'entreprise n'a pas pû être ajoutée.");
+
+    } else {
+      System.out.println("companID=" + companyId);
+      dalServices.commit();
+      companyDTO.setCompanyId(companyId);
+      companyReturn = companyDAO.find(companyDTO);
+    }
+    return companyReturn;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<CompanyDTO> getAllCompaniesInvitedForJE(JEDTO je) {
+    if (Util.anyNull(je)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    return ((CompanyDAO) companyDAO).findAllInvitedInJE(je);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<CompanyDTO> getAllCompaniesNotInvitedForJE(JEDTO je) {
+    if (Util.anyNull(je)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    return ((CompanyDAO) companyDAO).findAllNotInvitedInJE(je);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public CompanyDTO getCompany(CompanyDTO companyDTO) {
+    if (Util.anyNull(companyDTO)) {
+      throw new BizzException("Erreur, entreprise incomplète.");
+    }
+    CompanyDTO company = ((CompanyDAO) companyDAO).find(companyDTO);
+    if (company == null) {
+      throw new BizzException("Erreur, l'entreprise n'a pas pu être trouvée");
+
+    }
+    return company;
+  }
+
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<CompanyDTO> getAllCompaniesAviableForJe(JEDTO jeDto) {
+    if (Util.anyNull(jeDto)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    List<CompanyDTO> listeReturn = null;
+    listeReturn = ((CompanyDAO) companyDAO).getAllCompaniesAviableForJe(jeDto);
+
+    return listeReturn;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public List<CompanyDTO> getNewCompaniesAviableForJe() {
+    List<CompanyDTO> listeReturn = null;
+
+    listeReturn = ((CompanyDAO) companyDAO).getNewCompaniesAviableForJe();
+    return listeReturn;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean inviteCompany(CompanyDTO companyDto, JEDTO jeCourrante) {
+    if (Util.anyNull(companyDto, jeCourrante)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+
+    dalServices.startTransaction();
+    if (!((CompanyDAO) companyDAO).inviteCompany(companyDto, jeCourrante)) {
+      throw new BizzException("Erreur, l'entreprise n'as pas pu être invitée.");
+    }
+    dalServices.commit();
+    return true;
+  }
+
+  @Override
+  public CompanyDTO updateCompany(CompanyDTO companyDTO) {
+    if (Util.anyNull(companyDTO)) {
+      throw new BizzException("Erreur, entreprise incomplète.");
+    }
+    CompanyDTO companyReturn = null;
+
+    dalServices.startTransaction();
+    Long companyId = companyDAO.update(companyDTO);
+    if (companyId == null) {
+      // An error has occurred -> rollback
+      dalServices.rollback();
+      throw new BizzException("Erreur, l'update n'as pas pu être effectué.");
+    } else {
+      System.out.println("companID=" + companyId);
+      dalServices.commit();
+      companyReturn = companyDAO.find(companyDTO);
+    }
+    return companyReturn;
+
+
+  }
+
+  @Override
+  public List<List<String>> getAllCompaniesInfoByCategory() {
+    return ((CompanyDAO) companyDAO).getAllCompaniesInfoByCategory();
+  }
+
+
+  @Override
+  public List<CompanyDTO> searchCompanies(CompanyDTO co) {
+    return ((CompanyDAO) companyDAO).searchCompanies(co);
+  }
+
+  @Override
+  public CompanyDTO changeState(CompanyDTO companyDto, JEDTO jeCourante) {
+    if (Util.anyNull(companyDto, jeCourante)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    CompanyDTO company = null;
+
+    if (((Participation) companyDto.getParticipations().get(0)).checkParticipation()) {
+      System.out.println("etat correct");
+      dalServices.startTransaction();
+      company = ((CompanyDAO) companyDAO).changeState(companyDto, jeCourante);
+      if (company == null) {
+        // An error has occurred -> rollback
+        dalServices.rollback();
+        throw new BizzException("Erreur, l'état de l'entreprise n'a pas pu être changé.");
+      } else {
+        System.out.println("company : " + company.toString());
+        dalServices.commit();
+      }
+    } else {
+      System.out.println("état inccorect");
+    }
+
+    return company;
+  }
+
+  @Override
+  public CompanyDTO cancelState(CompanyDTO companyDto, JEDTO jeCourante) {
+    if (Util.anyNull(companyDto, jeCourante)) {
+      throw new BizzException("Erreur, informations incomplètes.");
+    }
+    CompanyDTO company = null;
+
+    dalServices.startTransaction();
+    company = ((CompanyDAO) companyDAO).cancelState(companyDto, jeCourante);
+    if (company == null) {
+      // An error has occurred -> rollback
+      dalServices.rollback();
+      throw new BizzException("Erreur, la participation n'as pas pu être annulée.");
+    } else {
+      System.out.println("company : " + company.toString());
+      dalServices.commit();
+    }
+
+    return company;
+  }
+
+  @Override
+  public List<CompanyDTO> getAllCompaniesToContactForJE(JEDTO je) {
+    if (Util.anyNull(je)) {
+      throw new BizzException("Erreur, JE incomplète.");
+    }
+    return ((CompanyDAO) companyDAO).getAllToContactForJE(je);
+  }
+
+  @Override
+  public List<CompanyDTO> getAllCompanies() {
+
+    return ((CompanyDAO) companyDAO).getAllCompanies();
+  }
+
+}

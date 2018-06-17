@@ -1,0 +1,263 @@
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mindrot.jbcrypt.BCrypt;
+
+import bizz.UserImpl;
+import exception.BizzException;
+
+public class UserImplTest {
+
+  private UserImpl usr;
+
+
+  @Before
+  public void setUp() throws Exception {
+    usr = new UserImpl(1L, "don", "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    usr.setNumVersion(4);
+  }
+
+  @Test
+  public void testCheckPassword1() {
+    String pwd = BCrypt.hashpw("hehe", BCrypt.gensalt());
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, pwd);
+    usr1.checkPassword("hehe");
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckPassword2() {
+    String pwd = BCrypt.hashpw("hhe", BCrypt.gensalt());
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, pwd);
+    usr1.checkPassword("hehe");
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckLogin1() {
+    UserImpl usr1 = new UserImpl("", "hehe");
+    usr1.checkLogin();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckLogin2() {
+    UserImpl usr1 = new UserImpl(null, "hehe");
+    usr1.checkLogin();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckLogin3() {
+    UserImpl usr1 = new UserImpl("don", "");
+    usr1.checkLogin();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckLogin4() {
+    UserImpl usr1 = new UserImpl("don", null);
+    usr1.checkLogin();
+  }
+
+  @Test
+  public void testCheckLogin5() {
+    UserImpl usr1 = new UserImpl("hehe", "hehe");
+    usr1.checkLogin();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration1() {
+    UserImpl usr1 = new UserImpl(2L, null, "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration2() {
+    UserImpl usr1 = new UserImpl(2L, "don", null, "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration3() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", null, "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration4() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", null, true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration5() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, null);
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration6() {
+    UserImpl usr1 = new UserImpl(2L, "", "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration7() {
+    UserImpl usr1 = new UserImpl(2L, "don", "", "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration8() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration9() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration10() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, "");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration11() {
+    UserImpl usr1 = new UserImpl(2L, "***", "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration12() {
+    UserImpl usr1 = new UserImpl(2L, "ah", "dodo", "coco", "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration13() {
+    UserImpl usr1 = new UserImpl(2L, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaab", "dodo", "coco",
+        "coco@yahoo.fr", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration14() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@", true, "hehe");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration15() {
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, "heh");
+    usr1.checkRegistration();
+  }
+
+  @Test(expected = BizzException.class)
+  public void testCheckRegistration16() {
+    String pwd = BCrypt.hashpw("hehe", BCrypt.gensalt());
+    UserImpl usr1 = new UserImpl(2L, "don", "dodo", "coco", "coco@yahoo.fr", true, pwd);
+    usr1.checkRegistration();
+  }
+
+  @Test
+  public void testCheckRegistration17() {
+    usr.checkRegistration();
+  }
+
+  @Test
+  public void testHashedPassword() {
+    String salt = BCrypt.gensalt();
+    assertEquals(BCrypt.hashpw(usr.getPassword(), salt), BCrypt.hashpw("hehe", salt));
+  }
+
+  @Test
+  public void testGetUserId() {
+    assertEquals(new Long(1), usr.getUserID());
+  }
+
+  @Test
+  public void testSetUserId() {
+    usr.setUserID(2L);
+    assertEquals(new Long(2), usr.getUserID());
+  }
+
+  @Test
+  public void testGetLogin() {
+    assertEquals("don", usr.getLogin());
+  }
+
+  @Test
+  public void testSetLogin() {
+    usr.setLogin("dean");
+    assertEquals("dean", usr.getLogin());
+  }
+
+  @Test
+  public void testGetFirstName() {
+    assertEquals("dodo", usr.getFirstName());
+  }
+
+  @Test
+  public void testSetFirstName() {
+    usr.setFirstName("dean");
+    assertEquals("dean", usr.getFirstName());
+  }
+
+  @Test
+  public void testGetLastName() {
+    assertEquals("coco", usr.getLastName());
+  }
+
+  @Test
+  public void testSetLastName() {
+    usr.setLastName("dean");
+    assertEquals("dean", usr.getLastName());
+  }
+
+  @Test
+  public void testGetEmail() {
+    assertEquals("coco@yahoo.fr", usr.getEmail());
+  }
+
+  @Test
+  public void testSetEmail() {
+    usr.setEmail("dodo@yahoo.fr");
+    assertEquals("dodo@yahoo.fr", usr.getEmail());
+  }
+
+  @Test
+  public void testIsManager() {
+    assertTrue(usr.isManager());
+  }
+
+  @Test
+  public void testSetManager() {
+    usr.setManager(false);
+    assertFalse(usr.isManager());
+  }
+
+  @Test
+  public void testGetPassword() {
+    assertEquals("hehe", usr.getPassword());
+  }
+
+  @Test
+  public void testSetPassword() {
+    usr.setPassword("keke");
+    assertEquals("keke", usr.getPassword());
+  }
+
+  @Test
+  public void testGetNumVersion() {
+    assertEquals(4, usr.getNumVersion());
+  }
+
+  @Test
+  public void testSetNumVersion() {
+    usr.setNumVersion(5);
+    assertEquals(5, usr.getNumVersion());
+  }
+}

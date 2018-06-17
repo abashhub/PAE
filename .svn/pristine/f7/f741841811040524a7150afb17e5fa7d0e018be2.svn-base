@@ -1,0 +1,12 @@
+package bizz;
+
+import bizz.dto.CompanyDTO;
+
+/**
+ * This interface is used by the CompanyUCC, it declares the complicated methods necessary to
+ * managed an company.
+ *
+ */
+public interface Company extends CompanyDTO {
+  boolean checkRegistration();
+}

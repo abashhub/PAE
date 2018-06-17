@@ -1,0 +1,168 @@
+package bizz;
+
+import bizz.dto.CompanyDTO;
+import bizz.dto.ParticipationDTO;
+import exception.BizzException;
+import util.Util;
+
+/**
+ * This class is one implementation of the Contact interface and the ContactDTO interface, this is
+ * the implementation that should be used in production.
+ */
+public class ContactImpl implements Contact {
+  private Long id;
+  private CompanyDTO company;
+  private String lastName;
+  private String firstName;
+  private String email;
+  private String telephone;
+  private boolean isActive;
+  private int numVersion;
+  private ParticipationDTO participation;
+
+  /**
+   * Class constructor specifying every attribute.
+   */
+  public ContactImpl(Long id, CompanyDTO company, String lastName, String firstName, String email,
+      String telephone, boolean isActive) {
+    super();
+    this.id = id;
+    this.company = company;
+    this.lastName = lastName;
+    this.firstName = firstName;
+    this.email = email;
+    this.telephone = telephone;
+    this.isActive = isActive;
+  }
+
+  /**
+   * Empty class constructor. Attributes are expected to be set through setters.
+   */
+  public ContactImpl() {}
+
+  public ParticipationDTO getParticipation() {
+    return participation;
+  }
+
+  public void setParticipation(ParticipationDTO participation) {
+    this.participation = participation;
+  }
+
+
+  public int getNumVersion() {
+    return numVersion;
+  }
+
+  public void setNumVersion(int numVersion) {
+    this.numVersion = numVersion;
+  }
+
+  @Override
+  public Long getId() {
+    return this.id;
+  }
+
+  @Override
+  public CompanyDTO getCompany() {
+    return this.company;
+  }
+
+  @Override
+  public String getLastName() {
+    return this.lastName;
+  }
+
+  @Override
+  public String getFirstName() {
+    return this.firstName;
+  }
+
+  @Override
+  public String getEmail() {
+    return this.email;
+  }
+
+  @Override
+  public String getTelephone() {
+    return this.telephone;
+  }
+
+  @Override
+  public boolean isActive() {
+    return this.isActive;
+  }
+
+  @Override
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  @Override
+  public void setCompany(CompanyDTO company) {
+    this.company = company;
+  }
+
+  @Override
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
+  @Override
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  @Override
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  @Override
+  public void setTelephone(String telephone) {
+    this.telephone = telephone;
+  }
+
+  @Override
+  public void setStatus(boolean status) {
+    this.isActive = status;
+  }
+
+  @Override
+  public void inactivate() {
+    this.isActive = false;
+  }
+
+  @Override
+  public void checkContact() {
+    if (this.company == null) {
+      throw new BizzException("Entreprise innexistante.");
+    }
+    if (Util.anyNull(this.company, this.lastName, this.firstName)) {
+      throw new BizzException("Un ou plusieurs champs sont incomplets.");
+    }
+    if (Util.anyEmptyString(this.lastName, this.firstName)) {
+      throw new BizzException("Un ou plusieurs champs sont incomplets.");
+    }
+    if (this.email == null && this.telephone == null) {
+      throw new BizzException("Entrer un email et/ou un numéro de téléphone.");
+    }
+    if (this.email.isEmpty() && this.telephone.isEmpty()) {
+      throw new BizzException("Entrer un email et/ou un numéro de téléphone.");
+    }
+    if (!this.email.equals("") && this.email != null && !Util.isValidEmail(this.email)) {
+      throw new BizzException("L'email est invalide.");
+    }
+  }
+
+
+  @Override
+  public String toString() {
+    return "ContactImpl [id=" + id + ", company=" + company + ", lastName=" + lastName
+        + ", firstName=" + firstName + ", email=" + email + ", telephone=" + telephone
+        + ", isActive=" + isActive + ", numVersion=" + numVersion + ", participation="
+        + participation + "]";
+  }
+
+
+
+}

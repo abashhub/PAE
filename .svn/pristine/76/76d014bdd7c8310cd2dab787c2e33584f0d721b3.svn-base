@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/Apache Commons/commons-codec-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/Apache Commons/commons-dbcp2-2.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/Apache Commons/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/Apache Commons/commons-pool2-2.4.2.jar"/>
+	<classpathentry kind="lib" path="lib/Genson/genson-1.3.jar"/>
+	<classpathentry kind="lib" path="lib/Jackson/jackson-annotations-2.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/Jackson/jackson-core-2.1.3.jar"/>
+	<classpathentry kind="lib" path="lib/Jackson/jackson-databind-2.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/jBCrypt/jBCrypt-0.4.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-http-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-io-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-security-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-server-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-servlet-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-util-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-webapp-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/jetty-xml-9.3.2.v20150730.jar"/>
+	<classpathentry kind="lib" path="lib/Jetty/servlet-api-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/JWT/jwt.jar"/>
+	<classpathentry kind="lib" path="lib/Postgresql/postgresql-9.3-1102.jdbc41.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/easymock-3.4-javadoc.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/easymock-3.4-samples.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/easymock-3.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/easymock-3.4-tests.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/easymock-3.4.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/original-easymock-3.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib/easyMock/original-easymock-3.4.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
